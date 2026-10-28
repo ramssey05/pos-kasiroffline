@@ -111,7 +111,7 @@ button,input,select{font:inherit}button{cursor:pointer;border:0}.hidden{display:
   .receipt-no-print{display:none!important}
 }
 @media(max-width:420px){.receipt-preview{width:calc(100vw - 16px);padding:8px}.receipt-paper{font-size:9.5px}}
-.navbtn.bt-connected{background:#dcfce7;color:#15803d;border:1px solid #86efac}.bt-spin{display:inline-block;animation:btspin .9s linear infinite}@keyframes btspin{to{transform:rotate(360deg)}}.report-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0 10px;border-bottom:1px solid var(--line)}
+.navbtn.bt-connected{background:#dcfce7;color:#15803d;border:1px solid #86efac}.navbtn:disabled{opacity:.75;cursor:wait}.bt-busy{opacity:.8;cursor:wait}.bt-spin{display:inline-block;animation:btspin .9s linear infinite}@keyframes btspin{to{transform:rotate(360deg)}}.report-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0 10px;border-bottom:1px solid var(--line)}
 .report-tab{padding:10px 12px;border:1px solid var(--line);border-bottom:0;border-radius:10px 10px 0 0;background:#eef5fa;color:var(--navy);font-size:12px;font-weight:400}
 .report-tab.active{background:var(--navy);color:#fff}
 .tab-count{display:inline-flex;min-width:20px;height:20px;align-items:center;justify-content:center;margin-left:4px;border-radius:999px;background:#dbeafe;color:var(--navy);font-size:10px}
@@ -722,7 +722,7 @@ function render(){
  const guest=!!state.reportGuest;
  const footer=guest
    ? `<button class="navbtn active" onclick="closeReport()">↩ Kembali ke Login</button>`
-   : `<button class="navbtn ${state.screen==='laporan'?'active':''}" onclick="openReport()">📊 Laporan</button><button class="navbtn ${btState==='connected'?'bt-connected':''}" id="btNavBtn" onclick="bt()" title="${btState==='connected'?'Klik untuk memutuskan Bluetooth':btState==='pairing'?'Klik untuk memilih ulang printer Bluetooth':'Klik untuk menghubungkan Bluetooth'}">🖨️ <span id="btNavText">${btState==='pairing'?'⟳ Pairing…':btState==='connected'?'Putuskan BT':'Connect BT'}</span></button><button class="navbtn ${state.screen==='pengaturan'?'active':''}" onclick="openSettings()">⚙️ Pengaturan</button>`;
+   : `<button class="navbtn ${state.screen==='laporan'?'active':''}" onclick="openReport()">📊 Laporan</button><button class="navbtn ${btState==='connected'?'bt-connected':''}" id="btNavBtn" onclick="bt()" ${btState==='pairing'||btState==='disconnecting'?'disabled':''} title="${btState==='connected'?'Klik untuk memutuskan Bluetooth':btState==='pairing'?'Sedang menghubungkan Bluetooth':btState==='disconnecting'?'Sedang memutuskan Bluetooth':'Klik untuk menghubungkan Bluetooth'}">🖨️ <span id="btNavText">${btState==='pairing'?'⟳ Pairing…':btState==='disconnecting'?'⟳ Memutuskan…':btState==='connected'?'Putuskan BT':'Connect BT'}</span></button><button class="navbtn ${state.screen==='pengaturan'?'active':''}" onclick="openSettings()">⚙️ Pengaturan</button>`;
  a.innerHTML=`<header class="topbar"><div class="brand">${esc(db.settings.name)}</div><div class="status"><span class="pill" id="clock"></span><span class="pill">${esc(state.cashier||'Mode laporan')}</span>${state.shift?`<span class="pill">Shift ${state.shift}</span>`:''}</div></header>
  <main class="main">${state.screen==='kasir'?cashierHTML():state.screen==='laporan'?reportHTML():settingsHTML()}</main>
  <footer class="footer-nav">${footer}</footer>`;
@@ -1044,13 +1044,22 @@ function generateReceiptText(s, isVoid=false, reprint=false) {
 }
 
 function printViaRawBTText(plainText) {
-  const ESC='\x1B';
-  const initPrinter=ESC+'@';
-  const fullData=initPrinter+plainText;
-  const base64Data=btoa(unescape(encodeURIComponent(fullData)));
-  const intentUrl='intent:-base64,'+base64Data+'#Intent;scheme=rawbt;package=ru.a404m.rawbtprinter;end;';
-  try{ window.location.href=intentUrl; }
-  catch(e){ toast('RawBT tidak dapat dibuka.'); }
+  const ESC = '\x1B';
+  const initPrinter = ESC + '@';
+  const fullData = initPrinter + plainText;
+  
+  // Menggunakan encodeURIComponent standar yang lebih stabil untuk RawBT
+  const encodedText = encodeURIComponent(fullData);
+  
+  // Format Intent URL alternatif yang langsung memicu aplikasi RawBT
+  const intentUrl = 'intent:' + encodedText + '#Intent;scheme=rawbt;package=ru.a404m.rawbtprinter;end;';
+  
+  try {
+    window.location.href = intentUrl;
+  } catch (e) {
+    console.error('Gagal membuka RawBT:', e);
+    toast('RawBT tidak dapat dibuka.');
+  }
 }
 
 function receiptHTML(s,isVoid=false,reprint=false){
@@ -1199,14 +1208,69 @@ async function writeBluetoothReceipt(plainText){
   if(btState!=='connected'||!printCharacteristic) return false;
   const ESC='\x1B';
   const data=new TextEncoder().encode(ESC+'@'+plainText);
-  const chunkSize=printCharacteristic.properties?.writeWithoutResponse ? 180 : 180;
+  
+  // Ubah ukuran chunk sedikit lebih kecil dan beri jeda ringan jika struknya sangat panjang (> 1000 karakter)
+  const chunkSize = plainText.length > 1000 ? 120 : 180;
+  
   for(let i=0;i<data.length;i+=chunkSize){
     const chunk=data.slice(i,i+chunkSize);
     if(printCharacteristic.properties?.writeWithoutResponse && printCharacteristic.writeValueWithoutResponse)
       await printCharacteristic.writeValueWithoutResponse(chunk);
     else
       await printCharacteristic.writeValue(chunk);
+      
+    // Jika struknya sangat panjang, beri jeda 30ms agar printer lebih stabil
+    if(plainText.length > 1000) {
+      await new Promise(resolve => setTimeout(resolve, 30));
+    }
   }
+  return true;
+}
+
+
+async function writeBluetoothReportOnly(plainText) {
+  if (btState !== 'connected' || !printCharacteristic) {
+    throw new Error('Printer Bluetooth belum terhubung.');
+  }
+
+  const data = new TextEncoder().encode('\x1B@' + plainText);
+
+  const canWriteWithoutResponse =
+    !!printCharacteristic.properties?.writeWithoutResponse &&
+    typeof printCharacteristic.writeValueWithoutResponse === 'function';
+
+  const canWrite =
+    !!printCharacteristic.properties?.write &&
+    typeof printCharacteristic.writeValue === 'function';
+
+  if (!canWriteWithoutResponse && !canWrite) {
+    throw new Error('Printer tidak mendukung pengiriman data.');
+  }
+
+  const chunkSize = 120; // <--- Diubah jadi 120 agar lebih kecil & aman untuk laporan
+
+  for (let i = 0; i < data.length; i += chunkSize) {
+    if (btState !== 'connected' || !printCharacteristic) {
+      throw new Error('Koneksi printer terputus.');
+    }
+
+    const chunk = data.slice(i, i + chunkSize);
+
+    if (canWriteWithoutResponse) {
+      await printCharacteristic.writeValueWithoutResponse(chunk);
+
+      if (i + chunkSize < data.length) {
+        await new Promise(resolve => setTimeout(resolve, 50)); // <--- Jeda dinaikkan jadi 50ms agar printer tidak kaget
+      }
+    } else {
+      await printCharacteristic.writeValue(chunk);
+      // Tambahkan jeda juga di mode write biasa jika diperlukan
+      if (i + chunkSize < data.length) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+    }
+  }
+
   return true;
 }
 
@@ -1232,97 +1296,147 @@ async function printReceipt(s,isVoid=false,reprint=false){
 // -------------------------------------------------------------
 let btPairingToken=0;
 
-async function bt(){
-  if(btState==='connected'){
-    try{if(btDevice?.gatt?.connected)btDevice.gatt.disconnect()}catch(e){}
-    resetBTState();
-    toast('Bluetooth berhasil diputuskan.');
+async function bt() {
+  // Tombol kedua kali saat pairing/disconnecting tidak memulai proses tumpang tindih.
+  if (btState === 'pairing' || btState === 'disconnecting') return;
+
+  if (btState === 'connected') {
+    const device = btDevice;
+    ++btPairingToken; // Batalkan operasi pairing lama bila masih ada.
+    setBTState('disconnecting');
+
+    try {
+      if (device?.gatt?.connected) device.gatt.disconnect();
+      // Beri UI waktu singkat untuk menampilkan status "Memutuskan…".
+      await new Promise(resolve => setTimeout(resolve, 250));
+      if (btDevice === device) resetBTState();
+      toast('Bluetooth berhasil diputuskan.');
+    } catch (e) {
+      console.error('Gagal memutuskan Bluetooth:', e);
+      resetBTState();
+      toast('Status Bluetooth direset. Periksa koneksi printer.');
+    }
     return;
   }
 
-  // Pairing boleh dicoba kembali kapan saja. Ini penting jika pengguna
-  // berpindah menu sehingga dialog Bluetooth sebelumnya dibatalkan browser.
-  const pairingToken=++btPairingToken;
+  const pairingToken = ++btPairingToken;
+  let pairingDevice = null;
   setBTState('pairing');
 
-  try{
-    if(!navigator.bluetooth||!navigator.bluetooth.requestDevice){
-      if(pairingToken===btPairingToken)resetBTState();
-      toast('Browser ini tidak mendukung Web Bluetooth. Gunakan RawBT.');
-      return;
+  try {
+    if (!navigator.bluetooth || !navigator.bluetooth.requestDevice) {
+      throw new Error('Browser tidak mendukung Web Bluetooth.');
     }
 
-    // Important: classic SPP UUID 00001101 is NOT a Web Bluetooth GATT service.
-    // We only ask for known BLE printer services here.
-    const bleServices=[
+    // Web Bluetooth hanya dapat menggunakan BLE/GATT; bukan Bluetooth Classic SPP.
+    const bleServices = [
       'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
       '000018f0-0000-1000-8000-00805f9b34fb'
     ];
 
-    const device=await navigator.bluetooth.requestDevice({
-      acceptAllDevices:true,
-      optionalServices:bleServices
+    pairingDevice = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: bleServices
     });
 
-    // Jika pengguna sudah memulai pairing baru, abaikan hasil pairing lama.
-    if(pairingToken!==btPairingToken){
-      try{if(device?.gatt?.connected)device.gatt.disconnect()}catch(e){}
-      return;
-    }
+    if (pairingToken !== btPairingToken) return;
 
-    btDevice=device;
-    const server=await device.gatt.connect();
-    printCharacteristic=null;
+    btDevice = pairingDevice;
+    pairingDevice.addEventListener('gattserverdisconnected', () => {
+      if (btDevice !== pairingDevice) return;
 
-    for(const uuid of bleServices){
-      try{
-        const service=await server.getPrimaryService(uuid);
-        const chars=await service.getCharacteristics();
-        printCharacteristic=chars.find(c=>c.properties.write||c.properties.writeWithoutResponse);
-        if(printCharacteristic)break;
-      }catch(e){}
-    }
-
-    if(!printCharacteristic)throw new Error('Printer tidak menyediakan BLE GATT write characteristic.');
-
-    if(pairingToken!==btPairingToken){
-      try{if(device?.gatt?.connected)device.gatt.disconnect()}catch(e){}
-      return;
-    }
-
-    setBTState('connected');
-    toast('Bluetooth Direct Connected: '+(device.name||'Printer BLE'));
-    device.addEventListener?.('gattserverdisconnected',()=>{
-      if(btDevice===device){
+      const intentional = btState === 'disconnecting';
+      if (intentional) {
+        // Pertahankan indikator pemutusan sebentar agar terlihat di tablet.
+        setTimeout(() => {
+          if (btDevice === pairingDevice) resetBTState();
+        }, 200);
+      } else {
         resetBTState();
         toast('Bluetooth terputus.');
       }
     });
-  }catch(e){
-    console.error('Web Bluetooth:',e);
-    // Jangan mengubah status dari percobaan lama jika sudah ada percobaan baru.
-    if(pairingToken===btPairingToken)resetBTState();
-    if(e?.name!=='NotFoundError'&&e?.name!=='AbortError'){
-      toast('Printer tidak mendukung Web Bluetooth Direct. Untuk MP-80M gunakan RawBT.');
+
+    const server = await pairingDevice.gatt.connect();
+    if (pairingToken !== btPairingToken) {
+      if (pairingDevice.gatt.connected) pairingDevice.gatt.disconnect();
+      return;
+    }
+
+    printCharacteristic = null;
+    for (const uuid of bleServices) {
+      try {
+        const service = await server.getPrimaryService(uuid);
+        const chars = await service.getCharacteristics();
+        printCharacteristic = chars.find(c =>
+          c.properties.write || c.properties.writeWithoutResponse
+        );
+        if (printCharacteristic) break;
+      } catch (e) {
+        // Coba layanan BLE berikutnya.
+      }
+    }
+
+    if (!printCharacteristic) {
+      throw new Error('Karakteristik tulis Bluetooth BLE tidak ditemukan.');
+    }
+
+    if (pairingToken !== btPairingToken || !pairingDevice.gatt.connected) {
+      if (pairingDevice.gatt.connected) pairingDevice.gatt.disconnect();
+      return;
+    }
+
+    setBTState('connected');
+    toast('Bluetooth terhubung: ' + (pairingDevice.name || 'Printer BLE'));
+  } catch (e) {
+    console.error('Web Bluetooth:', e);
+    if (pairingToken === btPairingToken) {
+      try {
+        if (pairingDevice?.gatt?.connected) pairingDevice.gatt.disconnect();
+      } catch (_) {}
+      resetBTState();
+
+      if (e?.name === 'NotFoundError' || e?.name === 'AbortError') {
+        toast('Pairing dibatalkan.');
+      } else {
+        toast('Gagal menghubungkan Bluetooth. Periksa dukungan BLE printer.');
+      }
     }
   }
 }
 
-function setBTState(s){
-  btState=s;
-  const b=document.getElementById('btNavBtn'),t=document.getElementById('btNavText');
-  if(!b||!t)return;
-  b.classList.toggle('bt-connected',s==='connected');
-  if(s==='pairing'){
-    t.innerHTML='<span class="bt-spin">⟳</span> Pairing…';
-    b.title='Sedang pairing. Klik lagi untuk memilih ulang printer Bluetooth';
-  }else if(s==='connected'){
-    t.textContent='Putuskan BT';
-    b.title='Klik untuk memutuskan Bluetooth printer';
-  }else{
-    t.textContent='Connect BT';
-    b.title='Bluetooth Direct (BLE/GATT). MP-80M SPP gunakan RawBT.';
+function setBTState(s) {
+  btState = s;
+  const b = document.getElementById('btNavBtn');
+  const t = document.getElementById('btNavText');
+  if (!b || !t) return;
+
+  b.classList.toggle('bt-connected', s === 'connected');
+  b.classList.toggle('bt-busy', s === 'pairing' || s === 'disconnecting');
+  b.disabled = s === 'pairing' || s === 'disconnecting';
+
+  if (s === 'pairing') {
+    t.innerHTML = '<span class="bt-spin">⟳</span> Pairing…';
+    b.title = 'Sedang menghubungkan Bluetooth';
+  } else if (s === 'disconnecting') {
+    t.innerHTML = '<span class="bt-spin">⟳</span> Memutuskan…';
+    b.title = 'Sedang memutuskan Bluetooth';
+  } else if (s === 'connected') {
+    t.textContent = 'Putuskan BT';
+    b.title = 'Klik untuk memutuskan Bluetooth printer';
+  } else {
+    t.textContent = 'Connect BT';
+    b.title = 'Klik untuk menghubungkan Bluetooth';
   }
+}
+
+function resetBTState() {
+  // Invalidate asynchronous pairing work and clear stale GATT references.
+  ++btPairingToken;
+  btState = 'disconnected';
+  printCharacteristic = null;
+  btDevice = null;
+  setBTState('disconnected');
 }
 
 function openSettings(){state.screen='pengaturan';render()}
@@ -1527,71 +1641,140 @@ function openOwnerDailyReportPreview(f, t, sh, sales){
   document.body.appendChild(wrap);
 }
 
-async function printOwnerReportPreview(){
-  const preview = document.querySelector('#receiptPreviewBackdrop .receipt-print-paper[data-owner-report="1"]');
-  if(!preview) return;
+
+async function printOwnerReportPreview() {
+  const preview = document.querySelector(
+    '#receiptPreviewBackdrop .receipt-print-paper[data-owner-report="1"]'
+  );
+
+  if (!preview) {
+    toast('Preview laporan tidak ditemukan.');
+    return;
+  }
 
   const plainText = preview.dataset.plainText || '';
 
-  // 1. Jika Bluetooth Direct terhubung, cetak langsung
-  if(btState === 'connected' && printCharacteristic){
-    try{
-      await writeBluetoothReceipt(plainText);
-      toast('Laporan Owner berhasil dicetak langsung via Bluetooth.');
+  if (!plainText.trim()) {
+    toast('Isi laporan kosong.');
+    return;
+  }
+
+  // 1. Bluetooth Direct: khusus laporan.
+  if (btState === 'connected' && printCharacteristic) {
+    try {
+      toast('Mengirim laporan ke printer...');
+
+      const success = await writeBluetoothReportOnly(plainText);
+
+      if (!success) {
+        throw new Error('Pengiriman laporan gagal.');
+      }
+
+      await writeBluetoothReportOnly('\n\n\n\n');
+
+      toast('Laporan berhasil dikirim ke printer Bluetooth.');
       closeReceiptPreview();
       return;
-    }catch(e){
-      console.error('Direct Web Bluetooth laporan owner failed:', e);
-      resetBTState();
+
+    } catch (e) {
+      console.error('Gagal mencetak laporan:', e);
+      toast('Cetak langsung gagal. Coba tombol Print lagi atau periksa koneksi.');
+      return;
     }
   }
 
-  // 2. Jika di Android (Bluetooth belum terhubung), langsung gunakan RawBT
-  if(navigator.userAgent.includes('Android')){
-    printViaRawBTText(plainText);
-    closeReceiptPreview();
+  // 2. Android: gunakan RawBT jika Bluetooth Direct tidak aktif.
+  if (/Android/i.test(navigator.userAgent)) {
+    try {
+      printViaRawBTText(plainText);
+      toast('Perintah cetak laporan dikirim ke RawBT.');
+      closeReceiptPreview();
+    } catch (e) {
+      console.error('Gagal membuka RawBT:', e);
+      toast('RawBT gagal dibuka. Periksa instalasi RawBT.');
+    }
     return;
   }
-  
-  // 3. Fallback browser biasa
+
+  // 3. Browser komputer.
   window.print();
 }
 
-async function printOwnerDailyReport(){
+
+
+async function printOwnerDailyReport() {
   const f = document.getElementById('rFrom')?.value || dateKey();
   const t = document.getElementById('rTo')?.value || f;
   const sh = document.getElementById('rShift')?.value || '';
 
-  if(!f || !t) return toast('Tanggal laporan belum dipilih.');
-  if(f > t) return toast('Tanggal mulai tidak boleh lebih besar dari tanggal akhir.');
+  if (!f || !t) {
+    return toast('Tanggal laporan belum dipilih.');
+  }
 
-  const sales = db.sales.filter(s =>
-    s.businessDate >= f && s.businessDate <= t && (!sh || s.shift === sh) && !s.voided
+  if (f > t) {
+    return toast('Tanggal mulai tidak boleh lebih besar dari tanggal akhir.');
+  }
+
+  // Filter transaksi berdasarkan tanggal, shift, dan status void.
+  const sales = db.sales.filter(s => {
+    if (!s.businessDate) return false;
+
+    const tglMurniData = String(s.businessDate).substring(0, 10);
+    const matchDate = tglMurniData >= f && tglMurniData <= t;
+    const matchShift = !sh || String(s.shift) === String(sh);
+    const notVoided = !s.voided;
+
+    return matchDate && matchShift && notVoided;
+  });
+
+  if (sales.length === 0) {
+    return toast('Tidak ada transaksi untuk tanggal/shift ini.');
+  }
+
+  // Buat teks laporan tanpa menghapus karakter dari hasil aslinya.
+  const plainText = String(
+    generateOwnerDailyReportText(f, t, sh, sales)
   );
 
-  const plainText = generateOwnerDailyReportText(f, t, sh, sales);
+  // Jika Bluetooth Direct terhubung, gunakan fungsi khusus laporan.
+  if (btState === 'connected' && printCharacteristic) {
+    try {
+      toast('Sedang mengirim laporan ke printer...');
 
-  // 1. PRIORITAS UTAMA: Jika Bluetooth Direct sudah terhubung, cetak langsung tanpa preview
-  if(btState === 'connected' && printCharacteristic){
-    try{
-      await writeBluetoothReceipt(plainText);
-      toast('Laporan Owner berhasil dicetak langsung via Bluetooth.');
+      const success = await writeBluetoothReportOnly(plainText);
+
+      if (!success) {
+        throw new Error('Pengiriman laporan gagal.');
+      }
+
+      // Majukan kertas setelah seluruh teks laporan dikirim.
+      const paperFeedSuccess =
+        await writeBluetoothReportOnly('\n\n\n\n');
+
+      if (!paperFeedSuccess) {
+        throw new Error('Perintah maju kertas gagal dikirim.');
+      }
+
+      toast('Laporan berhasil dikirim ke printer Bluetooth.');
       return;
-    }catch(e){
-      console.error('Direct Web Bluetooth laporan owner failed:', e);
-      resetBTState();
+
+    } catch (e) {
+      // Pertahankan koneksi agar tidak langsung memutus Bluetooth
+      // hanya karena satu operasi cetak gagal.
+      console.error('Gagal mengirim laporan Bluetooth:', e);
+
+      toast(
+        'Laporan gagal dikirim. Periksa printer dan koneksi Bluetooth.'
+      );
+
+      return;
     }
   }
 
-  // 2. KONDISI ANDROID: Langsung lempar ke RawBT tanpa membuka modal preview (Sama seperti Struk/Void/Reprint)
-  if(navigator.userAgent.includes('Android')){
-    printViaRawBTText(plainText);
-    return;
-  }
-
-  // 3. Jika di Desktop / iOS dan Bluetooth tidak terhubung, baru buka preview
+  // Preview hanya dibuka jika Bluetooth Direct belum terhubung.
   openOwnerDailyReportPreview(f, t, sh, sales);
 }
+
 
 
 function exportExcel(){
