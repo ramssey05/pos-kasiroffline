@@ -1214,9 +1214,11 @@ async function printPreviewReceipt(){
 
 async function writeBluetoothReceipt(plainText){
   if (window.PosNativeBle?.isNative?.()) {
-    if (btState !== 'connected' || !printCharacteristic) return false;
+    if (btState !== 'connected' || !printCharacteristic) throw new Error('Printer BLE belum terhubung.');
     const data = new TextEncoder().encode('\x1B@' + plainText);
-    return window.PosNativeBle.writeBytes(data);
+    const sent = await window.PosNativeBle.writeBytes(data);
+    if (!sent) throw new Error('Data cetak tidak berhasil dikirim ke printer.');
+    return true;
   }
 
   if(btState!=='connected'||!printCharacteristic) return false;
