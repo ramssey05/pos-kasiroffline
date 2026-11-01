@@ -1318,10 +1318,12 @@ let btPairingToken=0;
 
 async function bt() {
   if (window.PosNativeBle?.isNative?.()) {
-    openNativeBluetoothScan();
-    return;
-    try { await window.PosNativeBle.toggleConnection(); }
-    catch (e) { console.error('Native Bluetooth:',e); toast('Bluetooth Android: '+(e?.message||String(e))); }
+    if (btState === 'connected') {
+      try { await window.PosNativeBle.disconnect(); }
+      catch (e) { toast('Gagal memutuskan Bluetooth: '+(e?.message||String(e))); }
+    } else {
+      openNativeBluetoothScan();
+    }
     return;
   }
 
@@ -1443,10 +1445,10 @@ function openNativeBluetoothScan() {
   wrap.style.zIndex='1200';
   wrap.innerHTML=`
     <div class="modalbox" style="max-width:520px">
-      <div class="modalhead"><b>Bluetooth Printer BLE</b><button class="close" onclick="document.getElementById('nativeBtScanBackdrop')?.remove()">×</button></div>
-      <div class="notice">Pastikan printer menyala, berada dalam jangkauan, dan tidak sedang tersambung ke HP/tablet lain. Pemindaian ini mencari perangkat BLE/GATT.</div>
-      <button id="btScanBtn" class="btn primary" style="width:100%" onclick="window.PosNativeBle?.scanForPrinter?.().catch(e=>toast('Scan gagal: '+(e?.message||String(e))))">Pindai Bluetooth</button>
-      <div id="btDeviceResults" class="bt-scan-panel"><div class="mini">Tekan Pindai Bluetooth untuk mencari printer.</div></div>
+      <div class="modalhead"><b>Bluetooth Printer Classic (SPP)</b><button class="close" onclick="document.getElementById('nativeBtScanBackdrop')?.remove()">×</button></div>
+      <div class="notice">Pastikan printer sudah dipasangkan (pairing) melalui pengaturan Bluetooth Android, menyala, dan tidak sedang tersambung ke perangkat lain. Pemindaian ini mencari Bluetooth Classic/SPP.</div>
+      <button id="btScanBtn" class="btn primary" style="width:100%" onclick="window.PosNativeBle?.scanForPrinter?.().catch(e=>toast('Scan gagal: '+(e?.message||String(e))))">Cari Printer Classic</button>
+      <div id="btDeviceResults" class="bt-scan-panel"><div class="mini">Tekan Cari Printer Classic untuk mencari printer yang aktif di sekitar.</div></div>
     </div>`;
   document.body.appendChild(wrap);
 }
