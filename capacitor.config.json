@@ -1,0 +1,6 @@
+{
+  "appId": "com.poskasir.offline",
+  "appName": "POS Kasir",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}
