@@ -603,6 +603,7 @@ body {
 }
 </style>
   <script type="module" src="./src/native-bridge.js"></script>
+  <script type="module" src="./src/xlsx-bridge.js"></script>
 
 <style id="native-bt-scan-style">
 .bt-device-option{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;padding:11px 12px;margin:7px 0;border:1px solid #d9e5ef;border-radius:10px;background:#f8fbfd;color:#183047}
@@ -643,15 +644,29 @@ let db=load(), btState='disconnected', btDevice=null, printCharacteristic=null;
 let state={cashier:'',shift:'',cart:[],category:'Semua',screen:'kasir',discountType:'Rp',discount:0,sessionId:null,reportGuest:false};
 restoreRuntime();
 
+const AUTO_BACKUP_KEY='warkopKasirAutoBackupV1';
 function load(){
  try{
-   const x=JSON.parse(localStorage.getItem(KEY));
+   const raw=localStorage.getItem(KEY) || localStorage.getItem(AUTO_BACKUP_KEY);
+   const x=raw?JSON.parse(raw):null;
    const d=x||structuredClone(defaults);
    d.shiftSessions=d.shiftSessions||[];
+   d.products=d.products||[];
+   d.sales=d.sales||[];
+   d.voids=d.voids||[];
+   d.pending=d.pending||[];
+   d.settings=d.settings||structuredClone(defaults.settings);
    return d;
- }catch(e){return structuredClone(defaults)}
+ }catch(e){
+   try{const b=JSON.parse(localStorage.getItem(AUTO_BACKUP_KEY)||'null');if(b?.settings&&b?.products)return b}catch(_){}
+   return structuredClone(defaults);
+ }
 }
-function save(){localStorage.setItem(KEY,JSON.stringify(db))}
+function save(){
+ const snapshot=JSON.stringify(db);
+ localStorage.setItem(KEY,snapshot);
+ try{localStorage.setItem(AUTO_BACKUP_KEY,snapshot)}catch(e){console.warn('Auto backup lokal tidak dapat diperbarui:',e)}
+}
 function persistRuntime(){
  db.runtime={
    cashier:state.cashier,shift:state.shift,sessionId:state.sessionId,
@@ -1502,13 +1517,72 @@ function settingsHTML(){return `<section class="panel settings-shell"><div class
 function closeSettings(){state.screen='kasir';render()}
 function saveSettings(){const finish=(logo,qris)=>{db.settings.name=document.getElementById('setName').value.trim()||'Warkop';db.settings.address=document.getElementById('setAddress').value.trim();db.settings.tax=Number(document.getElementById('setTax').value)||0;if(logo)db.settings.logo=logo;if(qris)db.settings.qris=qris;save();toast('Pengaturan tersimpan.');render()};Promise.all([file64(document.getElementById('logoFile').files[0]),file64(document.getElementById('qrisFile').files[0])]).then(x=>finish(x[0],x[1]))}
 function file64(f){return new Promise(r=>{if(!f)return r('');const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(f)})}
-function menuManager(){modal(`<div class="modalhead"><h3>Daftar Menu</h3><button class="close" onclick="closeModal()">×</button></div><div class="notice">Tambah, edit, atau hapus menu. Foto disimpan lokal di perangkat.</div><div id="menuEditor">${menuEditorHTML()}</div>`)}
+function menuManager(){modal(`<div class="modalhead"><h3>Daftar Menu</h3><button class="close" onclick="closeModal()">×</button></div><div class="notice">Tambah, edit, atau hapus menu. Foto disimpan lokal di perangkat. Untuk upload massal, gunakan Excel dengan header Kategori, Menu, Harga.</div><div class="grid2" style="margin-bottom:10px"><button class="btn light" onclick="downloadMenuTemplate()">Download Template Excel</button><button class="btn navy" onclick="document.getElementById('menuExcelFile').click()">Upload Menu Excel</button></div><input id="menuExcelFile" type="file" accept=".xlsx,.xls" style="display:none" onchange="importMenuExcel(this)"><div id="menuEditor">${menuEditorHTML()}</div>`)}
 function menuEditorHTML(){return `<div class="grid2"><div class="field"><label>Kategori</label><input id="mCat" class="input" placeholder="Kopi"></div><div class="field"><label>Nama Produk</label><input id="mName" class="input" placeholder="Nama menu"></div></div><div class="grid2"><div class="field"><label>Harga</label><input id="mPrice" class="input" type="number" placeholder="10000"></div><div class="field"><label>Foto</label><input id="mFile" class="input" type="file" accept="image/*"></div></div><button class="btn primary" onclick="addProduct()">+ Tambahkan</button><div class="scroll" style="margin-top:15px"><table><thead><tr><th>Menu</th><th>Kategori</th><th>Harga</th><th>Aksi</th></tr></thead><tbody>${db.products.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.cat)}</td><td>${rupiah(p.price)}</td><td><button class="btn light" onclick="editProduct('${p.id}')">Edit</button> <button class="btn danger" onclick="deleteProduct('${p.id}')">Hapus</button></td></tr>`).join('')}</tbody></table></div>`}
 function addProduct(){const cat=document.getElementById('mCat').value.trim(),name=document.getElementById('mName').value.trim(),price=Number(document.getElementById('mPrice').value);if(!cat||!name||!price)return toast('Kategori, nama, dan harga wajib diisi.');file64(document.getElementById('mFile').files[0]).then(img=>{db.products.push({id:'p'+Date.now(),cat,name,price,icon:iconFor(cat),img});save();menuManager();render()})}
 function editProduct(id){const p=db.products.find(x=>x.id===id);const n=prompt('Nama produk:',p.name);if(n===null)return;const h=prompt('Harga:',p.price);if(h===null)return;const c=prompt('Kategori:',p.cat);if(c===null)return;p.name=n.trim()||p.name;p.price=Number(h)||p.price;p.cat=c.trim()||p.cat;p.icon=iconFor(p.cat);save();menuManager();render()}
 function deleteProduct(id){if(confirm('Hapus menu ini?')){db.products=db.products.filter(p=>p.id!==id);save();menuManager();render()}}
-function backupData(){const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='backup-warkop-'+dateKey()+'.json';a.click();toast('Backup dibuat.')}
-function restoreData(){const i=document.createElement('input');i.type='file';i.accept='.json,application/json';i.onchange=()=>{const f=i.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!x.settings||!x.products)throw 0;db=x;save();toast('Restore berhasil.');render()}catch(e){toast('File backup tidak valid.')}};r.readAsText(f)};i.click()}
+function downloadBlob(blob,name){
+ const url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+function backupData(){
+ try{
+   const snapshot=JSON.stringify(db,null,2);
+   localStorage.setItem(KEY,JSON.stringify(db));
+   try{localStorage.setItem(AUTO_BACKUP_KEY,JSON.stringify(db))}catch(_){}
+   downloadBlob(new Blob([snapshot],{type:'application/json'}),'backup-warkop-'+dateKey()+'.json');
+   toast('Backup berhasil disiapkan dan salinan otomatis lokal diperbarui.');
+ }catch(e){console.error(e);toast('Backup gagal: '+(e?.message||String(e)))}
+}
+function restoreData(){
+ const i=document.createElement('input');i.type='file';i.accept='.json,application/json';
+ i.onchange=()=>{const f=i.files[0];if(!f)return;const r=new FileReader();
+ r.onload=()=>{try{
+   const x=JSON.parse(r.result);if(!x.settings||!Array.isArray(x.products))throw new Error('Struktur file tidak sesuai.');
+   db=x;save();toast('Restore berhasil. Data aplikasi sudah dipulihkan.');render();
+ }catch(e){toast('File backup tidak valid: '+(e?.message||''))}};
+ r.readAsText(f)};i.click();
+}
+function downloadMenuTemplate(){
+ if(!window.XLSX)return toast('Modul Excel belum siap. Coba beberapa detik lagi.');
+ const ws=window.XLSX.utils.aoa_to_sheet([['Kategori','Menu','Harga'],['Kopi','Kopi Susu',14000],['Makanan','Nasi Goreng',18000]]);
+ ws['!cols']=[{wch:18},{wch:28},{wch:14}];
+ const wb=window.XLSX.utils.book_new();window.XLSX.utils.book_append_sheet(wb,ws,'Template Menu');
+ window.XLSX.writeFile(wb,'Template_Upload_Menu_POS.xlsx');
+}
+async function importMenuExcel(input){
+ const file=input.files?.[0];if(!file)return;
+ try{
+   if(!window.XLSX)throw new Error('Modul Excel belum siap. Muat ulang aplikasi lalu coba lagi.');
+   const data=await file.arrayBuffer();
+   const wb=window.XLSX.read(data,{type:'array'});
+   const ws=wb.Sheets[wb.SheetNames[0]];
+   const rows=window.XLSX.utils.sheet_to_json(ws,{defval:'',raw:true});
+   if(!rows.length)throw new Error('File Excel tidak memiliki data.');
+   const headers=Object.keys(rows[0]).map(x=>String(x).trim().toLowerCase());
+   if(!['kategori','menu','harga'].every(x=>headers.includes(x)))throw new Error('Header wajib: Kategori, Menu, Harga.');
+   let added=0,skipped=0;
+   const seen=new Set(db.products.map(p=>(String(p.cat).trim().toLowerCase()+'|'+String(p.name).trim().toLowerCase())));
+   for(const row of rows){
+     const get=(key)=>{const k=Object.keys(row).find(x=>String(x).trim().toLowerCase()===key);return k===undefined?'':row[k]};
+     const cat=String(get('kategori')||'').trim(),name=String(get('menu')||'').trim();
+     const rawPrice=get('harga');
+     const price=typeof rawPrice==='number'?rawPrice:Number(String(rawPrice).replace(/[^0-9,.-]/g,'').replace(',','.'));
+     if(!cat||!name||!Number.isFinite(price)||price<=0){skipped++;continue}
+     const key=cat.toLowerCase()+'|'+name.toLowerCase();
+     if(seen.has(key)){skipped++;continue}
+     seen.add(key);
+     db.products.push({id:'p'+Date.now()+'_'+added+'_'+Math.random().toString(36).slice(2,7),cat,name,price:Math.round(price),icon:iconFor(cat),img:''});
+     added++;
+   }
+   if(!added)throw new Error('Tidak ada menu baru yang valid. Periksa isi dan duplikasi data.');
+   save();menuManager();render();
+   toast(added+' menu berhasil ditambahkan. '+skipped+' baris dilewati.');
+ }catch(e){console.error('Import menu Excel:',e);toast('Upload Excel gagal: '+(e?.message||String(e)))}
+ finally{input.value=''}
+}
 function wipe(){if(confirm('Hapus SEMUA data termasuk transaksi dan menu?')){localStorage.removeItem(KEY);db=load();state.cart=[];toast('Semua data dihapus.');render()}}
 function modal(html){const m=document.getElementById('modal');m.innerHTML=`<div class="modalbox">${html}</div>`;m.classList.remove('hidden')}
 function closeModal(){document.getElementById('modal').classList.add('hidden')}
