@@ -1,165 +1,118 @@
 import { Capacitor } from '@capacitor/core';
-import { BleClient } from '@capacitor-community/bluetooth-le';
+import { BluetoothClassic } from '@nosslabs/bluetooth-classic';
 
 const isNative = () => Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
-const get = key => { try { return localStorage.getItem(key) || ''; } catch { return ''; } };
-const put = (key,value) => { try { localStorage.setItem(key,String(value)); } catch {} };
+let connected = false;
+let currentDevice = null;
+let connecting = false;
 
-let initialized=false, device=null, serviceUuid=null, characteristicUuid=null;
-let connecting=false, scanning=false, supportsWNR=false, scanTimer=null;
-
-function escapeHtml(v) {
-  return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function status(message) {
+  const el = document.getElementById('btNativeStatus');
+  if (el) el.textContent = 'Status: ' + message;
 }
-function setNativeStatus(message) {
-  const el=document.getElementById('btNativeStatus');
-  if(el) el.textContent='Status: '+message;
-}
-function publish(connected,name='Printer BLE') {
-  setNativeStatus(connected ? 'TERHUBUNG — '+(device?.name||name) : 'belum terhubung');
+function publish(isConnected, device = null) {
+  connected = !!isConnected;
+  currentDevice = connected ? device : null;
   window.__nativeSetBTConnection?.(
-    connected && device ? {id:device.deviceId,name:device.name||name} : null,
-    connected ? {properties:{write:true,writeWithoutResponse:supportsWNR}} : null,
+    connected ? { id: device?.address, name: device?.name || 'RPP02N' } : null,
+    connected ? { properties: { write: true, writeWithoutResponse: false }, nativeClassic: true } : null,
     connected
   );
+  status(connected ? 'TERHUBUNG — ' + (device?.name || 'Printer Bluetooth') + ' (SPP)' : 'belum terhubung');
 }
-async function init() {
-  if(initialized) return;
-  await BleClient.initialize({androidNeverForLocation:false});
-  initialized=true;
+async function ensurePermission() {
+  const result = await BluetoothClassic.checkPermissions();
+  if (result?.status !== 'granted') {
+    const requested = await BluetoothClassic.requestPermissions();
+    if (requested?.status !== 'granted') throw new Error('Izin Bluetooth tidak diberikan.');
+  }
 }
-async function stopScan() {
-  if(scanTimer) { clearTimeout(scanTimer); scanTimer=null; }
-  if(!scanning) return;
-  try { await BleClient.stopLEScan(); } catch(e) { console.warn('Stop BLE scan',e); }
-  scanning=false;
-}
-function renderScanResults(items) {
-  const list=document.getElementById('btDeviceResults');
-  if(!list) return;
-  if(!items.length) { list.innerHTML='<div class="mini">Belum ada perangkat BLE ditemukan. Pastikan printer menyala dan Bluetooth aktif.</div>'; return; }
-  list.innerHTML=items.map(d=>`
-    <button type="button" class="bt-device-option" data-device-id="${escapeHtml(d.deviceId)}">
-      <span><b>${escapeHtml(d.name)}</b><small>${escapeHtml(d.deviceId)}</small></span>
-      <span class="mini">${d.rssi===null?'':d.rssi+' dBm'}　Hubungkan</span>
+function renderDevices(devices) {
+  const list = document.getElementById('btDeviceResults');
+  if (!list) return;
+  if (!devices.length) {
+    list.innerHTML = '<div class="mini">Printer belum ditemukan. Pair RPP02N melalui pengaturan Bluetooth Android terlebih dahulu.</div>';
+    return;
+  }
+  list.innerHTML = devices.map((d, i) => `
+    <button type="button" class="bt-device-option" data-device-index="${i}">
+      <span><b>${String(d.name || 'Perangkat Bluetooth').replace(/[&<>"']/g, '')}</b><small>${String(d.address || '').replace(/[&<>"']/g, '')}</small></span>
+      <span class="mini">Hubungkan SPP</span>
     </button>`).join('');
-  list.querySelectorAll('[data-device-id]').forEach(btn=>btn.addEventListener('click',()=>{
-    const selected=items.find(x=>x.deviceId===btn.dataset.deviceId);
-    if(selected) connectSelected(selected).catch(e=>{ setNativeStatus('GAGAL TERHUBUNG — '+(e?.message||String(e))); window.toast?.('Koneksi gagal: '+(e?.message||String(e))); });
+  list.querySelectorAll('[data-device-index]').forEach(btn => btn.addEventListener('click', async () => {
+    const d = devices[Number(btn.dataset.deviceIndex)];
+    try { await connect(d); }
+    catch (e) { status('GAGAL — ' + (e?.message || String(e))); window.toast?.('Koneksi SPP gagal: ' + (e?.message || String(e))); }
   }));
 }
 async function scanForPrinter() {
-  if(scanning) await stopScan();
-  if(connecting) return;
-  await init();
-  const found=new Map();
-  const scanButton=document.getElementById('btScanBtn');
-  const list=document.getElementById('btDeviceResults');
-  if(list) list.innerHTML='<div class="mini">Memindai perangkat printer BLE selama sekitar 12 detik…</div>';
-  if(scanButton) { scanButton.disabled=true; scanButton.textContent='Memindai…'; }
+  if (connecting) return;
+  await ensurePermission();
+  const scanButton = document.getElementById('btScanBtn');
+  if (scanButton) { scanButton.disabled = true; scanButton.textContent = 'Memindai…'; }
+  status('mencari perangkat Bluetooth Classic…');
   try {
-    const enabled=await BleClient.isEnabled();
-    if(!enabled) await BleClient.requestEnable();
-    scanning=true;
-    await BleClient.requestLEScan({allowDuplicates:false},result=>{
-      const d=result?.device;
-      if(!d?.deviceId) return;
-      const item={deviceId:d.deviceId,name:(d.name||result.localName||'').trim()||'Perangkat BLE tanpa nama',rssi:Number.isFinite(result.rssi)?result.rssi:null};
-      found.set(item.deviceId,item);
-      renderScanResults([...found.values()]);
-    });
-    scanTimer=setTimeout(async()=>{
-      await stopScan();
-      if(scanButton) { scanButton.disabled=false; scanButton.textContent='Pindai Ulang'; }
-      if(!found.size && list) list.innerHTML='<div class="mini">Printer BLE belum ditemukan. Pastikan printer menyala dan tidak sedang tersambung ke perangkat lain.</div>';
-    },12000);
-  } catch(e) {
-    await stopScan();
-    if(scanButton) { scanButton.disabled=false; scanButton.textContent='Coba Pindai Lagi'; }
-    if(list) list.innerHTML='<div class="mini">Scan gagal: '+escapeHtml(e?.message||String(e))+'</div>';
-    throw e;
-  }
-}
-async function discoverWritable(id) {
-  const services=await BleClient.getServices(id);
-  for(const svc of services||[]) {
-    for(const ch of svc.characteristics||[]) {
-      if(ch.properties?.write || ch.properties?.writeWithoutResponse) {
-        return {service:svc.uuid,characteristic:ch.uuid,wnr:!!ch.properties?.writeWithoutResponse};
-      }
+    // Prefer paired devices because RPP02N should already be paired in Android settings.
+    const paired = await BluetoothClassic.getPairedDevices?.();
+    let devices = paired?.devices || paired || [];
+    if (!Array.isArray(devices) || !devices.length) {
+      const result = await BluetoothClassic.scan({ duration: 10000 });
+      devices = result?.devices || [];
     }
-  }
-  throw new Error('Karakteristik BLE WRITE tidak ditemukan pada printer. Pastikan printer mendukung BLE/GATT.');
-}
-async function connect(id,name='Printer BLE') {
-  await init();
-  try { await BleClient.disconnect(id); } catch {}
-  await BleClient.connect(id,disconnectedId=>{
-    if(device?.deviceId!==disconnectedId) return;
-    device=null; serviceUuid=null; characteristicUuid=null; supportsWNR=false;
-    publish(false); window.setBTState?.('disconnected');
-    if(get('posBtAutoReconnect')==='1') setTimeout(autoReconnect,3000);
-  });
-  const writable=await discoverWritable(id);
-  device={deviceId:id,name};
-  serviceUuid=writable.service; characteristicUuid=writable.characteristic; supportsWNR=writable.wnr;
-  put('posBtDeviceId',id); put('posBtDeviceName',name); put('posBtAutoReconnect','1');
-  publish(true,name); window.setBTState?.('connected');
-}
-async function connectSelected(selected) {
-  if(connecting) return;
-  connecting=true; put('posBtAutoReconnect','0'); window.setBTState?.('pairing'); setNativeStatus('menghubungkan ke '+selected.name+'…');
-  await stopScan();
-  try {
-    await connect(selected.deviceId,selected.name||'Printer BLE');
-    setNativeStatus('TERHUBUNG — '+(selected.name||'Printer BLE')); window.toast?.('Printer BLE TERHUBUNG: '+(selected.name||'Printer BLE'));
-  } catch(e) {
-    try { await BleClient.disconnect(selected.deviceId); } catch {}
-    device=null; publish(false); window.setBTState?.('disconnected');
-    throw e;
+    renderDevices(devices);
+    if (!devices.length) status('printer belum ditemukan — pair dahulu di pengaturan Android');
   } finally {
-    connecting=false;
-    const scanButton=document.getElementById('btScanBtn');
-    if(scanButton) { scanButton.disabled=false; scanButton.textContent='Pindai Ulang'; }
+    if (scanButton) { scanButton.disabled = false; scanButton.textContent = 'Cari Printer Ter-pair'; }
   }
+}
+async function connect(device) {
+  if (connecting) return;
+  connecting = true;
+  status('menghubungkan SPP ke ' + (device.name || device.address) + '…');
+  try {
+    await BluetoothClassic.connect({ address: device.address });
+    const check = await BluetoothClassic.isConnected?.();
+    if (check && check.isConnected === false) throw new Error('Koneksi SPP belum aktif.');
+    publish(true, device);
+    window.toast?.('Printer Bluetooth SPP terhubung: ' + (device.name || 'RPP02N'));
+  } catch (e) {
+    publish(false);
+    throw e;
+  } finally { connecting = false; }
 }
 async function disconnect() {
-  put('posBtAutoReconnect','0'); await stopScan();
-  const id=device?.deviceId||get('posBtDeviceId');
-  try { if(id) await BleClient.disconnect(id); } catch {}
-  device=null; serviceUuid=null; characteristicUuid=null; supportsWNR=false;
-  publish(false); window.setBTState?.('disconnected'); setNativeStatus('diputuskan'); window.toast?.('Bluetooth diputuskan.');
+  await BluetoothClassic.disconnect();
+  publish(false);
+  window.toast?.('Bluetooth printer diputuskan.');
 }
 async function toggleConnection() {
-  if(device) return disconnect();
+  if (connected) return disconnect();
   return scanForPrinter();
 }
-async function autoReconnect() {
-  if(!isNative()||connecting||device||get('posBtAutoReconnect')!=='1') return;
-  const id=get('posBtDeviceId'); if(!id) return;
-  connecting=true; window.setBTState?.('pairing');
-  try {
-    await connect(id,get('posBtDeviceName')||'Printer BLE');
-    window.toast?.('Printer tersambung otomatis.');
-  } catch(e) {
-    device=null; publish(false); window.setBTState?.('disconnected');
-    console.warn('Native BLE auto reconnect:',e);
-  } finally { connecting=false; }
-}
 async function writeBytes(input) {
-  if(!device||!serviceUuid||!characteristicUuid) throw new Error('Printer BLE belum terhubung.');
-  const bytes=input instanceof Uint8Array?input:new Uint8Array(input);
-  // Android BLE umumnya memakai MTU default 23 byte (payload 20 byte). Chunk kecil mencegah write ditolak.
-  const chunkSize=20;
-  for(let i=0;i<bytes.length;i+=chunkSize) {
-    if(!device) throw new Error('Koneksi printer terputus saat mencetak.');
-    const chunk=bytes.slice(i,i+chunkSize);
-    const view=new DataView(chunk.buffer,chunk.byteOffset,chunk.byteLength);
-    if(supportsWNR) await BleClient.writeWithoutResponse(device.deviceId,serviceUuid,characteristicUuid,view);
-    else await BleClient.write(device.deviceId,serviceUuid,characteristicUuid,view);
-    if(i+chunkSize<bytes.length) await new Promise(resolve=>setTimeout(resolve,20));
+  if (!connected) throw new Error('Printer Bluetooth SPP belum terhubung.');
+  const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
+  // Native plugin sends a byte array over RFCOMM SPP, preserving ESC/POS control bytes.
+  for (let i = 0; i < bytes.length; i += 512) {
+    await BluetoothClassic.write({ data: Array.from(bytes.slice(i, i + 512)) });
+  }
+  const check = await BluetoothClassic.isConnected?.();
+  if (check && !check.isConnected) {
+    publish(false);
+    throw new Error('Koneksi printer terputus saat mengirim data.');
   }
   return true;
 }
-window.PosNativeBle={isNative,toggleConnection,autoReconnect,writeBytes,disconnect,scanForPrinter};
-if(isNative()) init().then(()=>setTimeout(autoReconnect,1000)).catch(e=>console.warn('Native BLE init:',e));
+window.PosNativeBle = {
+  isNative,
+  toggleConnection,
+  autoReconnect: async () => {},
+  writeBytes,
+  disconnect,
+  scanForPrinter
+};
+if (isNative()) {
+  BluetoothClassic.addListener?.('bluetoothState', event => {
+    if (event?.value === 'off') publish(false);
+  }).catch?.(() => {});
+}
