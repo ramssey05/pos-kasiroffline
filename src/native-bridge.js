@@ -9,6 +9,12 @@ let connected = false;
 let connecting = false;
 let lastDevice = null;
 let manualDisconnect = false;
+let reconnectTimer = null;
+let monitorTimer = null;
+let reconnectBusy = false;
+let monitorBusy = false;
+const HEARTBEAT_INTERVAL = 2500;
+const RECONNECT_INTERVAL = 3000;
 
 function publish(isConnected, device = null) {
   connected = !!isConnected;
@@ -28,6 +34,48 @@ async function ensurePermission() {
   }
 }
 function closePicker() { document.getElementById('nativeBtPicker')?.remove(); }
+function stopMonitor() { if (monitorTimer) clearTimeout(monitorTimer); monitorTimer = null; }
+function stopReconnect() { if (reconnectTimer) clearTimeout(reconnectTimer); reconnectTimer = null; }
+function showPairingState() { window.__nativeSetBTPairing?.(true); }
+function scheduleReconnect(delay = RECONNECT_INTERVAL) {
+  if (!isNative() || manualDisconnect || connected || connecting || reconnectBusy || reconnectTimer || !lastDevice?.address) return;
+  showPairingState();
+  reconnectTimer = setTimeout(async () => {
+    reconnectTimer = null;
+    if (manualDisconnect || connected || connecting || reconnectBusy) return;
+    reconnectBusy = true;
+    try {
+      await ensurePermission();
+      await connect(lastDevice, { automatic: true });
+    } catch (e) {
+      publish(false);
+      showPairingState();
+      scheduleReconnect(RECONNECT_INTERVAL);
+    } finally { reconnectBusy = false; }
+  }, delay);
+}
+function startMonitor() {
+  stopMonitor();
+  if (!connected || manualDisconnect) return;
+  monitorTimer = setTimeout(async () => {
+    monitorTimer = null;
+    if (!connected || monitorBusy || manualDisconnect) return;
+    monitorBusy = true;
+    try {
+      // ESC/POS real-time status request. Failed SPP writes indicate a dropped socket.
+      await BluetoothClassic.write({ data: [0x10, 0x04, 0x01] });
+    } catch (e) {
+      stopMonitor();
+      publish(false);
+      showPairingState();
+      try { await BluetoothClassic.disconnect(); } catch (_) {}
+      scheduleReconnect(500);
+    } finally {
+      monitorBusy = false;
+      if (connected && !manualDisconnect) startMonitor();
+    }
+  }, HEARTBEAT_INTERVAL);
+}
 let pendingPrintResolve = null;
 function finishPrintConnect(value) { if (pendingPrintResolve) { const done=pendingPrintResolve; pendingPrintResolve=null; done(!!value); } }
 function loadLastDevice() {
@@ -88,14 +136,15 @@ async function connect(device, options = {}) {
   try {
     await BluetoothClassic.connect({ address: device.address });
     publish(true, device);
-    manualDisconnect = false; window.__nativeSetBTPairing?.(false); window.toast?.('Printer Bluetooth SPP terhubung: ' + (device.name || 'Printer'));
+    manualDisconnect = false; stopReconnect(); startMonitor(); window.__nativeSetBTPairing?.(false); window.toast?.('Printer Bluetooth SPP terhubung: ' + (device.name || 'Printer'));
   } catch (e) { window.__nativeSetBTPairing?.(false); publish(false); throw e; }
   finally { connecting = false; }
 }
 async function disconnect() {
   manualDisconnect = true;
+  stopMonitor(); stopReconnect();
   try { await BluetoothClassic.disconnect(); }
-  finally { publish(false); window.toast?.('Bluetooth printer diputuskan.'); }
+  finally { publish(false); window.__nativeSetBTPairing?.(false); window.toast?.('Bluetooth printer diputuskan.'); }
 }
 async function toggleConnection() { if (connected) return disconnect(); manualDisconnect = false; return scanForPrinter(); }
 async function connectForPrint() {
@@ -118,7 +167,7 @@ async function writeBytes(input) {
       if (i + 256 < bytes.length) await new Promise(resolve => setTimeout(resolve, 12));
     }
     return true;
-  } catch (e) { publish(false); throw e; }
+  } catch (e) { publish(false); showPairingState(); scheduleReconnect(500); throw e; }
 }
 async function saveBackup(content, filename) {
   if (!isNative()) throw new Error('Penyimpanan file native hanya tersedia di APK.');
@@ -132,5 +181,15 @@ async function saveBackup(content, filename) {
 window.PosNativeBle = { isNative, toggleConnection, writeBytes, disconnect, scanForPrinter, connectForPrint, openRawBT, saveBackup };
 if (isNative()) {
   loadLastDevice();
-  // Tidak menyambungkan printer otomatis saat aplikasi dibuka.
+  BluetoothClassic.addListener('bluetoothState', event => {
+    if (event?.value === 'off' || event?.value === 'turning_off') {
+      stopMonitor();
+      publish(false);
+      if (!manualDisconnect && lastDevice?.address) showPairingState();
+    } else if (event?.value === 'on' && !manualDisconnect && lastDevice?.address) {
+      showPairingState();
+      scheduleReconnect(300);
+    }
+  }).catch(() => {});
+  if (lastDevice?.address) scheduleReconnect(1200);
 }
