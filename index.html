@@ -1462,8 +1462,8 @@ function openNativeBluetoothScan() {
   wrap.style.zIndex='1200';
   wrap.innerHTML=`
     <div class="modalbox" style="max-width:520px">
-      <div class="modalhead"><b>Bluetooth Printer BLE (GATT)</b><button class="close" onclick="document.getElementById('nativeBtScanBackdrop')?.remove()">×</button></div>
-      <div class="notice">Pastikan printer mendukung BLE/GATT, menyala, dan tidak tersambung ke perangkat lain. Pilih printer, tunggu status TERHUBUNG, lalu coba cetak.</div><div id="btNativeStatus" class="notice" style="margin-top:8px">Status: belum terhubung</div>
+      <div class="modalhead"><b>Bluetooth Printer Classic SPP</b><button class="close" onclick="document.getElementById('nativeBtScanBackdrop')?.remove()">×</button></div>
+      <div class="notice">Pastikan RPP02N sudah dipasangkan melalui pengaturan Bluetooth Android. Pilih printer pada daftar, tunggu status TERHUBUNG (SPP), lalu coba cetak struk.</div><div id="btNativeStatus" class="notice" style="margin-top:8px">Status: belum terhubung</div>
       <button id="btScanBtn" class="btn primary" style="width:100%" onclick="window.PosNativeBle?.scanForPrinter?.().catch(e=>toast('Scan gagal: '+(e?.message||String(e))))">Cari Printer BLE</button>
       <div id="btDeviceResults" class="bt-scan-panel"><div class="mini">Tekan Cari Printer BLE untuk mencari printer yang aktif di sekitar.</div></div>
     </div>`;
