@@ -2,6 +2,7 @@ import { Capacitor } from '@capacitor/core';
 import { BluetoothClassic } from '@nosslabs/bluetooth-classic';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { AppLauncher } from '@capacitor/app-launcher';
+import { Share } from '@capacitor/share';
 
 const isNative = () => Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
 let connected = false;
@@ -121,9 +122,12 @@ async function writeBytes(input) {
 }
 async function saveBackup(content, filename) {
   if (!isNative()) throw new Error('Penyimpanan file native hanya tersedia di APK.');
-  await Filesystem.mkdir({ path: 'POS-Kasir', directory: Directory.External, recursive: true });
-  const result = await Filesystem.writeFile({ path: 'POS-Kasir/' + filename, data: content, directory: Directory.External, encoding: Encoding.UTF8, recursive: true });
-  return result;
+  const path = 'POS-Kasir/' + filename;
+  await Filesystem.mkdir({ path: 'POS-Kasir', directory: Directory.Cache, recursive: true });
+  await Filesystem.writeFile({ path, data: content, directory: Directory.Cache, encoding: Encoding.UTF8, recursive: true });
+  const file = await Filesystem.getUri({ path, directory: Directory.Cache });
+  await Share.share({ title: 'Backup POS Kasir', text: 'Simpan file backup POS Kasir ini ke folder Download atau lokasi aman.', files: [file.uri], dialogTitle: 'Simpan File Backup' });
+  return { uri: file.uri };
 }
 window.PosNativeBle = { isNative, toggleConnection, writeBytes, disconnect, scanForPrinter, connectForPrint, openRawBT, saveBackup };
 if (isNative()) {
