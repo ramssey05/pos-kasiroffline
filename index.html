@@ -1386,15 +1386,16 @@ async function printViaRawBTText(plainText) {
   try {
     const bytes = await buildReceiptBytes(plainText);
     const base64Data = bytesToBase64(bytes);
-    // RawBT menerima data ESC/POS melalui URI rawbt:base64,<BASE64>.
-    // Intent sebelumnya memakai action/extra yang tidak sesuai dengan skema URI RawBT.
-    const intentUrl = 'intent:base64,' + base64Data +
-      '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
-    window.location.href = intentUrl;
-    toast('Membuka RawBT untuk mencetak. Pastikan printer terpilih di RawBT.');
+    if (window.PosNativeBle?.isNative?.()) {
+      await window.PosNativeBle.openRawBT(base64Data);
+    } else {
+      window.location.href = 'rawbt:base64,' + base64Data;
+    }
+    return true;
   } catch (e) {
     console.error('RawBT print:', e);
-    toast('Gagal menyiapkan data struk untuk RawBT.');
+    toast('RawBT gagal dibuka: ' + (e?.message || 'Pastikan aplikasi RawBT terpasang.'), 'error');
+    throw e;
   }
 }
 function receiptHTML(s,isVoid=false,reprint=false){
@@ -2194,7 +2195,7 @@ async function backupData(){
     const filename='backup-pos-kasir-'+dateKey()+'.json';
     if(window.PosNativeBle?.isNative?.() && window.PosNativeBle?.saveBackup){
       const saved=await window.PosNativeBle.saveBackup(content,filename);
-      toast('Backup berhasil disimpan di Documents/POS-Kasir/'+filename);
+      toast('Backup berhasil disimpan di folder POS-Kasir (penyimpanan aplikasi).');
       return saved;
     }
     const blob=new Blob([content],{type:'application/json;charset=utf-8'});
@@ -2498,8 +2499,8 @@ async function printOwnerReportPreview() {
   // 2. Android: gunakan RawBT jika Bluetooth Direct tidak aktif.
   if (/Android/i.test(navigator.userAgent)) {
     try {
-      printViaRawBTText(plainText);
-      toast('Perintah cetak laporan dikirim ke RawBT.');
+      await printViaRawBTText(plainText);
+      toast('Data laporan berhasil diserahkan ke RawBT.');
       closeReceiptPreview();
     } catch (e) {
       console.error('Gagal membuka RawBT:', e);
