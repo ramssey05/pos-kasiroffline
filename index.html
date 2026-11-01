@@ -2196,7 +2196,7 @@ async function backupData(){
     const filename='backup-pos-kasir-'+dateKey()+'.json';
     if(window.PosNativeBle?.isNative?.() && window.PosNativeBle?.saveBackup){
       const saved=await window.PosNativeBle.saveBackup(content,filename);
-      toast('Backup berhasil disimpan di folder POS-Kasir (penyimpanan aplikasi).');
+      toast('File backup siap dibagikan. Pilih Simpan ke File/Download pada menu Android.');
       return saved;
     }
     const blob=new Blob([content],{type:'application/json;charset=utf-8'});
