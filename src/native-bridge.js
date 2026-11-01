@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { BluetoothClassic } from '@nosslabs/bluetooth-classic';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 
 const isNative = () => Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
 let connected = false;
@@ -21,7 +22,7 @@ async function ensurePermission() {
   }
 }
 function closePicker() { document.getElementById('nativeBtPicker')?.remove(); }
-function showPicker(devices) {
+function showPicker(devices, scanning = false) {
   closePicker();
   const wrap = document.createElement('div');
   wrap.id = 'nativeBtPicker';
@@ -35,7 +36,7 @@ function showPicker(devices) {
   close.style.cssText = 'font-size:24px;background:#eef2f6;border-radius:50%;width:34px;height:34px;color:#183047';
   close.onclick = closePicker; title.appendChild(close); panel.appendChild(title);
   const info = document.createElement('p');
-  info.textContent = devices.length ? 'Pilih printer RPP02N yang sudah dipasangkan di pengaturan Bluetooth Android.' : 'Printer belum ditemukan. Pair printer dari Pengaturan Bluetooth Android, lalu tekan Cari Ulang.';
+  info.textContent = scanning ? 'Sedang mencari printer Bluetooth…' : (devices.length ? 'Pilih printer RPP02N yang sudah dipasangkan di pengaturan Bluetooth Android.' : 'Printer belum ditemukan. Pair printer dari Pengaturan Bluetooth Android, lalu tekan Cari Ulang.');
   info.style.cssText = 'font-size:12px;color:#64748b;line-height:1.5'; panel.appendChild(info);
   const list = document.createElement('div'); list.style.cssText = 'display:grid;gap:8px;margin:12px 0';
   devices.forEach(device => {
@@ -49,7 +50,7 @@ function showPicker(devices) {
     btn.onclick = async () => { try { btn.disabled = true; action.textContent = 'Menghubungkan…'; await connect(device); closePicker(); } catch (e) { btn.disabled = false; action.textContent = 'Coba lagi'; window.toast?.('Koneksi SPP gagal: ' + (e?.message || String(e)), 'error'); } };
     list.appendChild(btn);
   });
-  panel.appendChild(list);
+  if (scanning) { const loading = document.createElement('div'); loading.textContent = '⏳ Memindai perangkat…'; loading.style.cssText = 'padding:14px;text-align:center;color:#64748b'; list.appendChild(loading); }\n  panel.appendChild(list);
   const bottom = document.createElement('div'); bottom.style.cssText = 'display:flex;gap:8px';
   const rescan = document.createElement('button'); rescan.textContent = 'Cari Ulang'; rescan.style.cssText = 'flex:1;padding:10px;border-radius:9px;background:#35a9e8;color:white'; rescan.onclick = () => scanForPrinter();
   const cancel = document.createElement('button'); cancel.textContent = 'Tutup'; cancel.style.cssText = 'padding:10px 14px;border-radius:9px;background:#eef4f8;color:#0b2a4a'; cancel.onclick = closePicker;
@@ -83,5 +84,5 @@ async function writeBytes(input) {
   }
   return true;
 }
-window.PosNativeBle = { isNative, toggleConnection, writeBytes, disconnect, scanForPrinter };
+async function saveBackup(content, filename) {\n  if (!isNative()) throw new Error('Penyimpanan file native hanya tersedia di APK.');\n  await Filesystem.mkdir({ path: 'POS-Kasir', directory: Directory.Documents, recursive: true }).catch(() => {});\n  const result = await Filesystem.writeFile({ path: 'POS-Kasir/' + filename, data: content, directory: Directory.Documents, encoding: Encoding.UTF8, recursive: true });\n  return result;\n}\nwindow.PosNativeBle = { isNative, toggleConnection, writeBytes, disconnect, scanForPrinter, saveBackup };
 if (isNative()) BluetoothClassic.addListener?.('bluetoothState', event => { if (event?.value === 'off') publish(false); }).catch?.(() => {});
