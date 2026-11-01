@@ -808,6 +808,7 @@ body {
 <div id="app" class="app hidden"></div>
 <div id="login" class="login">
   <div class="loginbox">
+    <div style="display:flex;justify-content:flex-end"><button type="button" class="btn light" style="padding:7px 11px" onclick="openLoginSettings()" title="Pengaturan">⚙️</button></div>
     <div class="loginlogo">☕</div><h2 style="text-align:center;margin:5px 0">POS Kasir</h2>
     <div class="field"><label>Nama Kasir</label><input id="loginName" class="input" placeholder="Nama kasir"></div>
     <div class="field"><label>Shift</label><select id="loginShift" class="select"><option value="1">Shift 1</option><option value="2">Shift 2</option><option value="3">Shift 3</option></select></div>
@@ -1895,7 +1896,21 @@ document.addEventListener('visibilitychange',()=>{
 
 function openSettings(){state.screen='pengaturan';render()}
 function settingsHTML(){return `<section class="panel settings-shell"><div class="settings-window"><div class="report-titlebar"><div><b>⚙️ Pengaturan</b><div class="mini">Konfigurasi tempat, menu, QRIS, dan backup</div></div><button class="close" onclick="closeSettings()">×</button></div><div style="padding:16px"><div class="settingmenu"><button class="settingtab active">Umum</button><button class="settingtab" onclick="menuManager()">Daftar Menu</button><button class="settingtab" onclick="backupData()">⬇ Unduh File Backup</button><button class="settingtab" onclick="restoreData()">⬆ Restore dari File</button><button class="settingtab danger" onclick="wipe()">Hapus Semua Data</button></div><div class="grid2"><div class="field"><label>Nama Tempat</label><input id="setName" class="input" value="${esc(db.settings.name)}"></div><div class="field"><label>PPN (%)</label><input id="setTax" class="input" type="number" min="0" value="${db.settings.tax||''}"></div></div><div class="field"><label>Alamat</label><input id="setAddress" class="input" value="${esc(db.settings.address)}"></div><div class="grid2"><div class="field"><label>Logo Struk</label><input id="logoFile" type="file" accept="image/*" class="input">${db.settings.logo?`<div style="margin-top:8px;display:flex;align-items:center;gap:8px"><img src="${db.settings.logo}" alt="Logo tersimpan" style="max-width:100px;max-height:65px;object-fit:contain;border:1px solid var(--line);border-radius:8px;padding:4px"><button class="btn danger" onclick="removeSavedImage('logo')">Hapus Logo</button></div>`:'<div class="mini" style="margin-top:6px">Belum ada logo tersimpan.</div>'}</div><div class="field"><label>QRIS</label><input id="qrisFile" type="file" accept="image/*" class="input">${db.settings.qris?`<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><img src="${db.settings.qris}" alt="QRIS tersimpan" style="max-width:100px;max-height:100px;object-fit:contain;border:1px solid var(--line);border-radius:8px;padding:4px"><button class="btn danger" onclick="removeSavedImage('qris')">Hapus QRIS</button></div>`:'<div class="mini" style="margin-top:6px">Belum ada QRIS tersimpan.</div>'}<div class="settings-save-inline"><button class="btn primary" onclick="saveSettings()">Simpan Pengaturan</button></div></div></div></div></section>`}
-function closeSettings(){state.screen='kasir';render()}
+function closeSettings(){
+  if(state.reportGuest && !state.cashier){
+    document.getElementById('app').classList.add('hidden');
+    document.getElementById('login').classList.remove('hidden');
+    state.screen='kasir';state.reportGuest=false;
+    return;
+  }
+  state.screen='kasir';render();
+}
+function openLoginSettings(){
+  state.cashier='';state.shift='';state.sessionId=null;state.cart=[];
+  state.reportGuest=true;state.screen='pengaturan';
+  document.getElementById('login').classList.add('hidden');
+  render();
+}
 async function saveSettings(){
   try{
     const logo=await file64(document.getElementById('logoFile').files[0]);
@@ -2207,8 +2222,21 @@ function restoreData(){
         if(!confirm('Restore akan mengganti seluruh data POS saat ini dengan isi file backup. Lanjutkan?'))return;
         const previous=db;db=x;
         try{save();}catch(err){db=previous;throw err;}
-        state.cart=Array.isArray(db.runtime?.cart)?db.runtime.cart:[];
-        toast('Restore berhasil. Data POS sudah dipulihkan.');render();
+        // Pulihkan status sesi sesuai file backup, bukan sesi kasir sebelum restore.
+        state={cashier:'',shift:'',cart:[],category:'Semua',screen:'kasir',discountType:'Rp',discount:0,sessionId:null,reportGuest:false};
+        restoreRuntime();
+        if(state.cashier && state.sessionId && getSession(state.sessionId) && !getSession(state.sessionId).closed){
+          document.getElementById('login').classList.add('hidden');
+          document.getElementById('app').classList.remove('hidden');
+          state.screen='kasir';
+          toast('Restore berhasil. Sesi kasir aktif dipulihkan sesuai file backup.');
+          render();
+        }else{
+          state.cashier='';state.shift='';state.sessionId=null;state.cart=[];
+          document.getElementById('app').classList.add('hidden');
+          document.getElementById('login').classList.remove('hidden');
+          toast('Restore berhasil. Data dipulihkan; silakan login untuk memulai shift.');
+        }
       }catch(e){toast('Restore gagal: '+(e.message||'File backup tidak valid.'),'error');}
     };
     r.readAsText(f);
