@@ -603,6 +603,13 @@ body {
 }
 </style>
   <script type="module" src="./src/native-bridge.js"></script>
+
+<style id="native-bt-scan-style">
+.bt-device-option{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;padding:11px 12px;margin:7px 0;border:1px solid #d9e5ef;border-radius:10px;background:#f8fbfd;color:#183047}
+.bt-device-option small{display:block;margin-top:4px;color:#64748b;font-size:10px;word-break:break-all}
+.bt-scan-panel{margin-top:12px;padding:12px;border:1px solid #d9e5ef;border-radius:12px;background:#fff}
+</style>
+
 </head>
 <body>
 <div id="app" class="app hidden"></div>
@@ -1311,6 +1318,8 @@ let btPairingToken=0;
 
 async function bt() {
   if (window.PosNativeBle?.isNative?.()) {
+    openNativeBluetoothScan();
+    return;
     try { await window.PosNativeBle.toggleConnection(); }
     catch (e) { console.error('Native Bluetooth:',e); toast('Bluetooth Android: '+(e?.message||String(e))); }
     return;
@@ -1422,6 +1431,24 @@ async function bt() {
       }
     }
   }
+}
+
+
+function openNativeBluetoothScan() {
+  const old=document.getElementById('nativeBtScanBackdrop');
+  if(old) old.remove();
+  const wrap=document.createElement('div');
+  wrap.id='nativeBtScanBackdrop';
+  wrap.className='modal';
+  wrap.style.zIndex='1200';
+  wrap.innerHTML=`
+    <div class="modalbox" style="max-width:520px">
+      <div class="modalhead"><b>Bluetooth Printer BLE</b><button class="close" onclick="document.getElementById('nativeBtScanBackdrop')?.remove()">×</button></div>
+      <div class="notice">Pastikan printer menyala, berada dalam jangkauan, dan tidak sedang tersambung ke HP/tablet lain. Pemindaian ini mencari perangkat BLE/GATT.</div>
+      <button id="btScanBtn" class="btn primary" style="width:100%" onclick="window.PosNativeBle?.scanForPrinter?.().catch(e=>toast('Scan gagal: '+(e?.message||String(e))))">Pindai Bluetooth</button>
+      <div id="btDeviceResults" class="bt-scan-panel"><div class="mini">Tekan Pindai Bluetooth untuk mencari printer.</div></div>
+    </div>`;
+  document.body.appendChild(wrap);
 }
 
 function setBTState(s) {
