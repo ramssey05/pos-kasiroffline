@@ -12,7 +12,8 @@
     "@capacitor/core": "^7.4.3",
     "@capacitor-community/bluetooth-le": "^7.2.0",
     "@nosslabs/bluetooth-classic": "^1.2.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "@capacitor/filesystem": "^7.1.4"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.4.3",
