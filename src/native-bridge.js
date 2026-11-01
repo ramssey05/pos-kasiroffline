@@ -50,8 +50,10 @@ function scheduleReconnect(delay = RECONNECT_INTERVAL) {
     } catch (e) {
       publish(false);
       showPairingState();
-      scheduleReconnect(RECONNECT_INTERVAL);
-    } finally { reconnectBusy = false; }
+    } finally {
+      reconnectBusy = false;
+      if (!connected && !manualDisconnect) scheduleReconnect(RECONNECT_INTERVAL);
+    }
   }, delay);
 }
 function startMonitor() {
