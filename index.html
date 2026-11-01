@@ -1449,6 +1449,14 @@ function setBTState(s) {
   }
 }
 
+// Bridge callback: update variabel Bluetooth yang dipakai semua fungsi cetak kasir.
+window.__nativeSetBTConnection = function(device, characteristic, connected) {
+  btDevice = device || null;
+  printCharacteristic = characteristic || null;
+  btState = connected ? 'connected' : 'disconnected';
+  setBTState(btState);
+};
+
 function resetBTState() {
   // Invalidate asynchronous pairing work and clear stale GATT references.
   ++btPairingToken;
