@@ -1445,10 +1445,10 @@ function openNativeBluetoothScan() {
   wrap.style.zIndex='1200';
   wrap.innerHTML=`
     <div class="modalbox" style="max-width:520px">
-      <div class="modalhead"><b>Bluetooth Printer Classic (SPP)</b><button class="close" onclick="document.getElementById('nativeBtScanBackdrop')?.remove()">×</button></div>
-      <div class="notice">Pastikan printer sudah dipasangkan (pairing) melalui pengaturan Bluetooth Android, menyala, dan tidak sedang tersambung ke perangkat lain. Pemindaian ini mencari Bluetooth Classic/SPP.</div>
-      <button id="btScanBtn" class="btn primary" style="width:100%" onclick="window.PosNativeBle?.scanForPrinter?.().catch(e=>toast('Scan gagal: '+(e?.message||String(e))))">Cari Printer Classic</button>
-      <div id="btDeviceResults" class="bt-scan-panel"><div class="mini">Tekan Cari Printer Classic untuk mencari printer yang aktif di sekitar.</div></div>
+      <div class="modalhead"><b>Bluetooth Printer BLE (GATT)</b><button class="close" onclick="document.getElementById('nativeBtScanBackdrop')?.remove()">×</button></div>
+      <div class="notice">Pastikan printer mendukung BLE/GATT, dalam keadaan menyala, dan tidak sedang tersambung ke perangkat lain. Pemindaian ini mencari printer BLE.</div>
+      <button id="btScanBtn" class="btn primary" style="width:100%" onclick="window.PosNativeBle?.scanForPrinter?.().catch(e=>toast('Scan gagal: '+(e?.message||String(e))))">Cari Printer BLE</button>
+      <div id="btDeviceResults" class="bt-scan-panel"><div class="mini">Tekan Cari Printer BLE untuk mencari printer yang aktif di sekitar.</div></div>
     </div>`;
   document.body.appendChild(wrap);
 }
