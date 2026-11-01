@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#0b2a4a">
   <link rel="manifest" href="./manifest.webmanifest">
 <title>POS Kasir</title>
+<script type="module" src="./src/native-bridge.js"></script>
 <style>
 :root{--blue:#35a9e8;--navy:#0b2a4a;--navy2:#123e66;--white:#fff;--bg:#eef6fb;--line:#d9e5ef;--muted:#64748b;--danger:#dc2626;--ok:#16a34a;--shadow:0 8px 24px #0b2a4a14}
 *{box-sizing:border-box}html,body{margin:0;height:100%;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:#183047;font-size:13px}
@@ -832,6 +833,15 @@ const defaults={settings:{name:'Warkop',address:'',tax:0,logo:'',qris:''},shiftS
 {id:'p7',cat:'Additional',name:'Telur',price:5000,icon:'🥚',img:''}],sales:[],voids:[],pending:[],lastNo:0};
 
 let db=load(), btState='disconnected', btDevice=null, printCharacteristic=null;
+let nativeBTConnected=false;
+window.__nativeSetBTConnection=(device,characteristic,connected)=>{
+  nativeBTConnected=!!connected;
+  if(nativeBTConnected){
+    btDevice={id:device?.id||device?.address,name:device?.name||'Printer SPP',gatt:{connected:true,disconnect(){window.PosNativeBle?.disconnect?.();}}};
+    printCharacteristic=characteristic||{properties:{write:true,writeWithoutResponse:false},nativeClassic:true};
+    setBTState('connected');
+  }else{nativeBTConnected=false;btDevice=null;printCharacteristic=null;setBTState('disconnected');}
+};
 let state={cashier:'',shift:'',cart:[],category:'Semua',screen:'kasir',discountType:'Rp',discount:0,sessionId:null,reportGuest:false};
 restoreRuntime();
 
@@ -1533,6 +1543,7 @@ async function printPreviewReceipt(){
 }
 
 async function writeBluetoothReceipt(plainText){
+  if(window.PosNativeBle?.isNative?.() && nativeBTConnected){const bytes=await buildReceiptBytes(plainText);return window.PosNativeBle.writeBytes(bytes);}
   if(!syncBTConnection()) throw new Error('Printer Bluetooth sudah terputus. Hubungkan ulang printer.');
   const data=await buildReceiptBytes(plainText);
   const canWriteWithoutResponse=!!printCharacteristic.properties?.writeWithoutResponse && typeof printCharacteristic.writeValueWithoutResponse==='function';
@@ -1549,6 +1560,7 @@ async function writeBluetoothReceipt(plainText){
 
 
 async function writeBluetoothReportOnly(plainText) {
+  if(window.PosNativeBle?.isNative?.() && nativeBTConnected){const bytes=new TextEncoder().encode('\x1B@'+plainText);return window.PosNativeBle.writeBytes(bytes);}
   if (!syncBTConnection()) {
     throw new Error('Printer Bluetooth belum terhubung.');
   }
@@ -1617,6 +1629,11 @@ let lastBTDevice=null;
 const btDisconnectHandlers=new WeakSet();
 
 async function bt(){
+  if(window.PosNativeBle?.isNative?.()){
+    try{if(nativeBTConnected)await window.PosNativeBle.disconnect();else await window.PosNativeBle.toggleConnection();}
+    catch(e){console.error('Native Bluetooth SPP:',e);toast('Bluetooth APK gagal: '+(e?.message||String(e)),'error');}
+    return;
+  }
   // Tombol manual selalu tersedia; jika ditekan, hentikan timer auto-connect
   // agar pemilihan printer oleh kasir menjadi prioritas.
   if(autoBTTimer){clearTimeout(autoBTTimer);autoBTTimer=null;}
@@ -1849,6 +1866,7 @@ function resetBTState(){
   setBTState('disconnected');
 }
 function syncBTConnection(){
+  if(window.PosNativeBle?.isNative?.())return !!nativeBTConnected;
   if(btState==='connected'){
     const actuallyConnected=!!(btDevice?.gatt?.connected && printCharacteristic);
     if(!actuallyConnected){
@@ -1861,19 +1879,22 @@ function syncBTConnection(){
 }
 // Polling membantu memperbarui tombol ketika printer mati/di luar jangkauan.
 setInterval(()=>{
+  if(window.PosNativeBle?.isNative?.())return;
   if(btState==='connected') syncBTConnection();
   else if(btState==='disconnected' && isAutoBTEnabled()) scheduleAutoReconnect(1000);
 },1500);
 window.addEventListener('pageshow',()=>{
+  if(window.PosNativeBle?.isNative?.())return;
   if(btState==='connected') syncBTConnection();
   else if(btState==='disconnected' && isAutoBTEnabled()) scheduleAutoReconnect(500);
 });
 document.addEventListener('visibilitychange',()=>{
+  if(window.PosNativeBle?.isNative?.())return;
   if(!document.hidden && btState==='disconnected' && isAutoBTEnabled()) scheduleAutoReconnect(500);
 });
 
 function openSettings(){state.screen='pengaturan';render()}
-function settingsHTML(){return `<section class="panel settings-shell"><div class="settings-window"><div class="report-titlebar"><div><b>⚙️ Pengaturan</b><div class="mini">Konfigurasi tempat, menu, QRIS, dan backup</div></div><button class="close" onclick="closeSettings()">×</button></div><div style="padding:16px"><div class="settingmenu"><button class="settingtab active">Umum</button><button class="settingtab" onclick="menuManager()">Daftar Menu</button><button class="settingtab" onclick="backupData()">Backup</button><button class="settingtab" onclick="restoreData()">Restore</button><button class="settingtab danger" onclick="wipe()">Hapus Semua Data</button></div><div class="grid2"><div class="field"><label>Nama Tempat</label><input id="setName" class="input" value="${esc(db.settings.name)}"></div><div class="field"><label>PPN (%)</label><input id="setTax" class="input" type="number" min="0" value="${db.settings.tax||''}"></div></div><div class="field"><label>Alamat</label><input id="setAddress" class="input" value="${esc(db.settings.address)}"></div><div class="grid2"><div class="field"><label>Logo Struk</label><input id="logoFile" type="file" accept="image/*" class="input">${db.settings.logo?`<div style="margin-top:8px;display:flex;align-items:center;gap:8px"><img src="${db.settings.logo}" alt="Logo tersimpan" style="max-width:100px;max-height:65px;object-fit:contain;border:1px solid var(--line);border-radius:8px;padding:4px"><button class="btn danger" onclick="removeSavedImage('logo')">Hapus Logo</button></div>`:'<div class="mini" style="margin-top:6px">Belum ada logo tersimpan.</div>'}</div><div class="field"><label>QRIS</label><input id="qrisFile" type="file" accept="image/*" class="input">${db.settings.qris?`<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><img src="${db.settings.qris}" alt="QRIS tersimpan" style="max-width:100px;max-height:100px;object-fit:contain;border:1px solid var(--line);border-radius:8px;padding:4px"><button class="btn danger" onclick="removeSavedImage('qris')">Hapus QRIS</button></div>`:'<div class="mini" style="margin-top:6px">Belum ada QRIS tersimpan.</div>'}<div class="settings-save-inline"><button class="btn primary" onclick="saveSettings()">Simpan Pengaturan</button></div></div></div></div></section>`}
+function settingsHTML(){return `<section class="panel settings-shell"><div class="settings-window"><div class="report-titlebar"><div><b>⚙️ Pengaturan</b><div class="mini">Konfigurasi tempat, menu, QRIS, dan backup</div></div><button class="close" onclick="closeSettings()">×</button></div><div style="padding:16px"><div class="settingmenu"><button class="settingtab active">Umum</button><button class="settingtab" onclick="menuManager()">Daftar Menu</button><button class="settingtab" onclick="backupData()">⬇ Unduh File Backup</button><button class="settingtab" onclick="restoreData()">⬆ Restore dari File</button><button class="settingtab danger" onclick="wipe()">Hapus Semua Data</button></div><div class="grid2"><div class="field"><label>Nama Tempat</label><input id="setName" class="input" value="${esc(db.settings.name)}"></div><div class="field"><label>PPN (%)</label><input id="setTax" class="input" type="number" min="0" value="${db.settings.tax||''}"></div></div><div class="field"><label>Alamat</label><input id="setAddress" class="input" value="${esc(db.settings.address)}"></div><div class="grid2"><div class="field"><label>Logo Struk</label><input id="logoFile" type="file" accept="image/*" class="input">${db.settings.logo?`<div style="margin-top:8px;display:flex;align-items:center;gap:8px"><img src="${db.settings.logo}" alt="Logo tersimpan" style="max-width:100px;max-height:65px;object-fit:contain;border:1px solid var(--line);border-radius:8px;padding:4px"><button class="btn danger" onclick="removeSavedImage('logo')">Hapus Logo</button></div>`:'<div class="mini" style="margin-top:6px">Belum ada logo tersimpan.</div>'}</div><div class="field"><label>QRIS</label><input id="qrisFile" type="file" accept="image/*" class="input">${db.settings.qris?`<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><img src="${db.settings.qris}" alt="QRIS tersimpan" style="max-width:100px;max-height:100px;object-fit:contain;border:1px solid var(--line);border-radius:8px;padding:4px"><button class="btn danger" onclick="removeSavedImage('qris')">Hapus QRIS</button></div>`:'<div class="mini" style="margin-top:6px">Belum ada QRIS tersimpan.</div>'}<div class="settings-save-inline"><button class="btn primary" onclick="saveSettings()">Simpan Pengaturan</button></div></div></div></div></section>`}
 function closeSettings(){state.screen='kasir';render()}
 async function saveSettings(){
   try{
@@ -2156,28 +2177,32 @@ function saveEditedProduct(id) {
 function deleteProduct(id){if(confirm('Hapus menu ini?')){db.products=db.products.filter(p=>p.id!==id);save();menuManager();render()}}
 function backupData(){
   try{
-    const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+    const payload={app:'POS Kasir Warkop',backupVersion:1,exportedAt:new Date().toISOString(),data:db};
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json;charset=utf-8'});
     const url=URL.createObjectURL(blob),a=document.createElement('a');
-    a.href=url;a.download='backup-warkop-'+dateKey()+'.json';
+    a.href=url;a.download='backup-pos-kasir-'+dateKey()+'.json';
     document.body.appendChild(a);a.click();a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),1500);
-    toast('Backup berhasil dibuat dan diunduh.');
-  }catch(e){toast('Backup gagal: '+(e.message||'Terjadi kesalahan.'));}
+    setTimeout(()=>URL.revokeObjectURL(url),2000);
+    toast('File backup berhasil diunduh. Simpan file ini untuk restore kapan saja.');
+  }catch(e){toast('Backup gagal: '+(e.message||'Terjadi kesalahan.'),'error');}
 }
 function restoreData(){
   const i=document.createElement('input');i.type='file';i.accept='.json,application/json';
   i.onchange=()=>{
     const f=i.files&&i.files[0];if(!f)return;
-    const r=new FileReader();
-    r.onerror=()=>toast('Restore gagal: file tidak dapat dibaca.');
+    const r=new FileReader();r.onerror=()=>toast('Restore gagal: file tidak dapat dibaca.','error');
     r.onload=()=>{
       try{
-        const x=JSON.parse(r.result);
-        if(!x||typeof x!=='object'||!x.settings||!Array.isArray(x.products))throw new Error('Struktur file backup tidak valid.');
+        const parsed=JSON.parse(r.result);
+        const x=parsed?.data&&parsed?.app==='POS Kasir Warkop'?parsed.data:parsed;
+        if(!x||typeof x!=='object'||!x.settings||!Array.isArray(x.products)||!Array.isArray(x.sales)||!Array.isArray(x.shiftSessions))
+          throw new Error('File bukan backup POS lengkap atau formatnya tidak sesuai.');
+        if(!confirm('Restore akan mengganti seluruh data POS saat ini dengan isi file backup. Lanjutkan?'))return;
         const previous=db;db=x;
         try{save();}catch(err){db=previous;throw err;}
-        toast('Restore berhasil. Data berhasil dipulihkan.');render();
-      }catch(e){toast('Restore gagal: '+(e.message||'File backup tidak valid.'));}
+        state.cart=Array.isArray(db.runtime?.cart)?db.runtime.cart:[];
+        toast('Restore berhasil. Data POS sudah dipulihkan.');render();
+      }catch(e){toast('Restore gagal: '+(e.message||'File backup tidak valid.'),'error');}
     };
     r.readAsText(f);
   };
