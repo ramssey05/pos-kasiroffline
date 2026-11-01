@@ -70,23 +70,25 @@ function showPicker(devices, scanning = false) {
 async function scanForPrinter() {
   if (connecting) return;
   manualDisconnect = false;
+  window.__nativeSetBTPairing?.(true);
   showPicker([], true);
   try {
     await ensurePermission();
     const result = await BluetoothClassic.scan({ duration: 3500 });
     const devices = [...new Map((result?.devices || []).filter(d => d?.address).map(d => [d.address, d])).values()];
+    window.__nativeSetBTPairing?.(false);
     showPicker(devices);
-  } catch (e) { showPicker([]); window.toast?.('Pencarian Bluetooth gagal: ' + (e?.message || String(e)), 'error'); }
+  } catch (e) { window.__nativeSetBTPairing?.(false); showPicker([]); window.toast?.('Pencarian Bluetooth gagal: ' + (e?.message || String(e)), 'error'); }
 }
 async function connect(device, options = {}) {
   if (connecting) return;
   connecting = true;
-  stopReconnect();
+  window.__nativeSetBTPairing?.(true);
   try {
     await BluetoothClassic.connect({ address: device.address });
     publish(true, device);
-    manualDisconnect = false; window.toast?.('Printer Bluetooth SPP terhubung: ' + (device.name || 'Printer'));
-  } catch (e) { publish(false); throw e; }
+    manualDisconnect = false; window.__nativeSetBTPairing?.(false); window.toast?.('Printer Bluetooth SPP terhubung: ' + (device.name || 'Printer'));
+  } catch (e) { window.__nativeSetBTPairing?.(false); publish(false); throw e; }
   finally { connecting = false; }
 }
 async function disconnect() {
