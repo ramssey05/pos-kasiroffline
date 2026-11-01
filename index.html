@@ -602,6 +602,7 @@ body {
   }
 }
 </style>
+  <script type="module" src="./src/native-bridge.js"></script>
 </head>
 <body>
 <div id="app" class="app hidden"></div>
@@ -1205,6 +1206,12 @@ async function printPreviewReceipt(){
 }
 
 async function writeBluetoothReceipt(plainText){
+  if (window.PosNativeBle?.isNative?.()) {
+    if (btState !== 'connected' || !printCharacteristic) return false;
+    const data = new TextEncoder().encode('\x1B@' + plainText);
+    return window.PosNativeBle.writeBytes(data);
+  }
+
   if(btState!=='connected'||!printCharacteristic) return false;
   const ESC='\x1B';
   const data=new TextEncoder().encode(ESC+'@'+plainText);
@@ -1229,6 +1236,12 @@ async function writeBluetoothReceipt(plainText){
 
 
 async function writeBluetoothReportOnly(plainText) {
+  if (window.PosNativeBle?.isNative?.()) {
+    if (btState !== 'connected' || !printCharacteristic) throw new Error('Printer Bluetooth belum terhubung.');
+    const data = new TextEncoder().encode('\x1B@' + plainText);
+    return window.PosNativeBle.writeBytes(data);
+  }
+
   if (btState !== 'connected' || !printCharacteristic) {
     throw new Error('Printer Bluetooth belum terhubung.');
   }
@@ -1297,6 +1310,12 @@ async function printReceipt(s,isVoid=false,reprint=false){
 let btPairingToken=0;
 
 async function bt() {
+  if (window.PosNativeBle?.isNative?.()) {
+    try { await window.PosNativeBle.toggleConnection(); }
+    catch (e) { console.error('Native Bluetooth:',e); toast('Bluetooth Android: '+(e?.message||String(e))); }
+    return;
+  }
+
   // Tombol kedua kali saat pairing/disconnecting tidak memulai proses tumpang tindih.
   if (btState === 'pairing' || btState === 'disconnecting') return;
 
