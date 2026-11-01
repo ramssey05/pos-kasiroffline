@@ -1518,7 +1518,8 @@ async function printPreviewReceipt(){
 
   // 2. Jika Laporan Owner DAN di Android (tapi Bluetooth BELUM terhubung), gunakan RawBT
   if (preview.dataset.ownerReport === '1' && navigator.userAgent.includes('Android')) {
-    printViaRawBTText(plainText);
+    await printViaRawBTText(plainText);
+    toast('Data laporan berhasil diserahkan ke RawBT.');
     closeReceiptPreview();
     return;
   }
@@ -1532,7 +1533,8 @@ async function printPreviewReceipt(){
       const isVoid = preview.dataset.void === '1';
       const reprint = preview.dataset.reprint === '1';
 
-      printViaRawBTText(generateReceiptText(s, isVoid, reprint));
+      await printViaRawBTText(generateReceiptText(s, isVoid, reprint));
+      toast('Data struk berhasil diserahkan ke RawBT.');
       closeReceiptPreview();
       return;
     }
