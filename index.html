@@ -998,3 +998,1844 @@ function cartHTML(){
      <div class="sumline"><span>Total Item</span><span>${itemCount}</span></div>
      <div class="sumline"><span>Subtotal</span><span>${rupiah(sub)}</span></div>
      <div class="discount-box">
+       <div class="discount-title">🏷️ Diskon <b>-${rupiah(disc)}</b></div>
+       <div class="discount-inputs">
+         <select class="select" onchange="state.discountType=this.value;persistRuntime();render()"><option ${state.discountType==='Rp'?'selected':''}>Rp</option><option ${state.discountType==='%'?'selected':''}>%</option></select>
+         <input class="input" type="number" min="0" value="${state.discount||''}" placeholder="0" oninput="state.discount=this.value;persistRuntime();updateCartTotalsOnly()">
+       </div>
+     </div>
+     ${tax?`<div class="sumline"><span>PPN ${tax}%</span><span>${rupiah(ppn)}</span></div>`:''}
+     <div class="cart-grand-total"><span>TOTAL BAYAR</span><b>${rupiah(total)}</b></div>
+     <button class="pay-big" ${state.cart.length?'':'disabled'} onclick="payModal()">&nbsp;Bayar</button>
+   </div>
+ </section>`;
+}
+function updateCartTotalsOnly(){
+ const root=document.querySelector('.cart');
+ if(!root)return;
+ const sub=state.cart.reduce((a,x)=>a+x.price*x.qty,0);
+ const disc=state.discountType==='%'?sub*(Number(state.discount)||0)/100:Number(state.discount)||0;
+ const after=Math.max(0,sub-disc),tax=Number(db.settings.tax)||0,ppn=tax?after*tax/100:0,total=after+ppn;
+ const totalEl=root.querySelector('.cart-grand-total b'); if(totalEl)totalEl.textContent=rupiah(total);
+ const title=root.querySelector('.discount-title b'); if(title)title.textContent='-'+rupiah(disc);
+}
+function pendingList(){
+ const list=db.pending||[];
+ if(!list.length){toast('Belum ada transaksi pending.');return;}
+ modal(`<div class="modalhead"><h3 style="margin:0;font-size:16px">Daftar Pending</h3><button class="close" onclick="closeModal()">×</button></div>
+ <div>${list.map((p,i)=>`<div class="pending-row"><div><b>${esc(p.id)}</b><div class="mini">${esc(p.cashier||'')} • Shift ${esc(String(p.shift||''))} • ${p.cart.length} item</div></div><div style="display:flex;gap:6px"><button class="btn primary" onclick="resumePending('${p.id}')">Lanjut</button><button class="btn danger" onclick="deletePending('${p.id}')">Hapus</button></div></div>`).join('')}</div>`);
+}
+function resumePending(id){
+ const p=(db.pending||[]).find(x=>x.id===id); if(!p)return;
+ state.cart=p.cart||[];state.discount=p.discount||0;state.discountType=p.discountType||'Rp';
+ persistRuntime();
+ db.pending=db.pending.filter(x=>x.id!==id);save();closeModal();render();toast('Transaksi pending dilanjutkan.');
+}
+function deletePending(id){
+ db.pending=db.pending.filter(x=>x.id!==id);save();closeModal();pendingList();
+}
+function addCart(id){const p=db.products.find(x=>x.id===id);if(!p)return;const x=state.cart.find(x=>x.id===id);if(x)x.qty++;else state.cart.push({...p,qty:1});persistRuntime();render()}
+function changeQty(id,n){const x=state.cart.find(x=>x.id===id);if(!x)return;x.qty+=n;if(x.qty<=0)state.cart=state.cart.filter(y=>y.id!==id);persistRuntime();render()}
+function removeCart(id){state.cart=state.cart.filter(x=>x.id!==id);persistRuntime();render()}
+function clearCart(){if(state.cart.length&&confirm('Kosongkan keranjang?')){state.cart=[];state.discount=0;persistRuntime();render()}}
+function pending(){
+ if(!state.cart.length)return toast('Keranjang kosong.');
+ db.pending.push({id:'P'+Date.now(),sessionId:state.sessionId,businessDate:getSession(state.sessionId)?.businessDate||shiftBusinessDate(state.shift),cashier:state.cashier,shift:state.shift,cart:state.cart,discount:state.discount,discountType:state.discountType,created:new Date().toISOString()});state.cart=[];state.discount=0;persistRuntime();toast('Transaksi dipending.');render()
+}
+function payModal(){
+ const sub=state.cart.reduce((a,x)=>a+x.price*x.qty,0),disc=state.discountType==='%'?sub*(Number(state.discount)||0)/100:Number(state.discount)||0,after=Math.max(0,sub-disc),tax=Number(db.settings.tax)||0,total=after+(tax?after*tax/100:0);
+ modal(`<div class="modalhead"><h3 style="margin:0;font-weight:500">Metode Pembayaran</h3><button class="close" onclick="closeModal()">×</button></div>
+ <div class="notice">Total pembayaran <span>${rupiah(total)}</span></div>
+ <div class="field"><label>Nama Konsumen / Meja *</label><input id="customer" class="input" </div>
+ <div class="field"><label>Metode Pembayaran</label><select id="method" class="select" onchange="cashFields()"><option value="Cash">Cash</option><option value="QRIS">QRIS</option><option value="Lainnya">Lainnya</option></select></div>
+ <div id="cashField" class="field"><label>Uang diterima</label><input id="cash" class="input" type="number" placeholder="${total}"></div>
+ <div id="otherField" class="field hidden"><label>Nama Pembayaran</label><input id="otherMethod" class="input" placeholder="Contoh: Transfer BCA, GoPay, ShopeePay"></div>
+ <div id="qrisPreview" class="hidden" style="text-align:center;margin:10px">${db.settings.qris?`<img src="${db.settings.qris}" style="max-width:260px;max-height:260px;border:1px solid #ddd;border-radius:10px">`:'<div class="notice">QRIS belum diupload di Pengaturan.</div>'}</div>
+ <button class="btn primary" style="width:100%" onclick="completePayment(${total})">Simpan Pembayaran</button>`);
+}
+function cashFields(){
+ const m=document.getElementById('method').value;
+ document.getElementById('cashField').classList.toggle('hidden',m!=='Cash');
+ document.getElementById('qrisPreview').classList.toggle('hidden',m!=='QRIS');
+ document.getElementById('otherField').classList.toggle('hidden',m!=='Lainnya');
+}
+function completePayment(total){
+ const session=getSession(state.sessionId);
+ if(!session||session.closed)return toast('Shift sudah closing. Silakan masuk dengan shift yang aktif.');
+ const customer=document.getElementById('customer').value.trim(), selectedMethod=document.getElementById('method').value;
+ if(!customer)return toast('Nama konsumen/meja wajib diisi.');
+
+ const confirmBtn=document.querySelector('#modal .modalbox .btn.primary');
+ if(confirmBtn?.dataset.busy==='1')return;
+ if(confirmBtn)confirmBtn.dataset.busy='1';
+
+ let cash=0, method=selectedMethod;
+ if(selectedMethod==='Cash'){
+   cash=Number(document.getElementById('cash').value)||0;
+   if(cash<total){if(confirmBtn)confirmBtn.dataset.busy='0';return toast('Uang diterima kurang dari total.');}
+ }else if(selectedMethod==='QRIS'){
+   if(!db.settings.qris){if(confirmBtn)confirmBtn.dataset.busy='0';return toast('QRIS belum diatur.');}
+ }else{
+   method=(document.getElementById('otherMethod').value||'').trim();
+   if(!method){if(confirmBtn)confirmBtn.dataset.busy='0';return toast('Nama pembayaran lainnya wajib diisi.');}
+ }
+
+ const id='TRX-'+String(++db.lastNo).padStart(5,'0'),sale={id,date:new Date().toISOString(),businessDate:session.businessDate,sessionId:session.id,cashier:state.cashier,shift:state.shift,customer,items:state.cart.map(x=>({id:x.id,name:x.name,price:x.price,qty:x.qty})),discount:Number(state.discount)||0,discountType:state.discountType,tax:Number(db.settings.tax)||0,total,method,cash,change:method==='Cash'?cash-total:0,voided:false};
+ db.sales.push(sale);
+ db.lastSession={date:dateKey(),shift:state.shift,closed:false,sessionId:session.id};
+ state.cart=[];state.discount=0;persistRuntime();
+ closeModal();render();
+ if(method==='Cash')showPaymentNotice('Pembayaran berhasil',`Kembalian ${rupiah(sale.change)}`,'success');
+ if(selectedMethod==='QRIS')showPaymentNotice('Pembayaran QRIS',`Pastikan pembayaran sesuai nominal ${rupiah(total)}.`,'info');
+ printReceipt(sale,false);
+}
+function openReport(viewOnly=false){
+ state.screen='laporan';
+ state.reportGuest=!!viewOnly || !state.cashier;
+ render();
+ if(viewOnly){
+   document.getElementById('login').classList.add('hidden');
+ }
+}
+
+function closeShift(){
+ const session=getSession(state.sessionId);
+ if(!session){toast('Sesi shift tidak ditemukan.');return;}
+ if(session.closed){toast('Shift ini sudah closing.');return;}
+ if(!confirm(`Closing Shift ${session.shift}? Setelah closing, transaksi pada shift ini tidak dapat di-void lagi dan laporan Excel shift ini baru dapat ditarik.`))return;
+ session.closed=true;
+ session.closedAt=new Date().toISOString();
+ db.lastSession={date:dateKey(),shift:session.shift,closed:true,sessionId:session.id};
+ db.runtime={cashier:'',shift:'',sessionId:null,cart:[],category:'Semua',discountType:'Rp',discount:0};
+ save();
+ state.cashier='';
+ state.shift='';
+ state.sessionId=null;
+ state.cart=[];
+ state.discount=0;
+ state.reportGuest=true;
+ state.screen='laporan';
+ render();
+ toast(`Shift ${session.shift} berhasil closing.`);
+}
+
+  function reportHTML(){
+  const today=dateKey(), sales=db.sales.filter(s=>s.businessDate===today), voids=db.voids.filter(v=>v.businessDate===today);
+  const active=getSession(state.sessionId);
+  const isGuest=!!state.reportGuest;
+  return `<section class="panel report-shell">
+    <div class="report-window">
+      <div class="report-titlebar">
+        <div><b>📊 Laporan Penjualan</b><div class="mini">${isGuest?'Mode lihat laporan':'Kasir aktif • Shift '+esc(state.shift||'')}</div></div>
+        <button class="close" onclick="closeReport()">×</button>
+      </div>
+      <div class="toolbar report-toolbar">
+        <input id="rFrom" class="input" style="max-width:145px" type="date" value="${today}">
+        <input id="rTo" class="input" style="max-width:145px" type="date" value="${today}">
+        <select id="rShift" class="select" style="max-width:130px"><option value="">Semua Shift</option><option>1</option><option>2</option><option>3</option></select>
+        <button class="btn primary" onclick="refreshReport()">Terapkan</button>
+        <button class="btn light" onclick="printOwnerDailyReport()">Print Laporan</button>
+        <button class="btn light ${btState==='connected'?'bt-connected':''}" id="reportBtBtn" onclick="bt()" title="${btState==='connected'?'Klik untuk memutuskan Bluetooth printer':'Hubungkan printer Bluetooth untuk mencetak laporan'}">🖨️ <span id="reportBtText">${btState==='pairing'?'⟳ Pairing…':btState==='connected'?'Putuskan BT':'Connect Bluetooth'}</span></button>
+        <button class="btn light" onclick="exportExcel()">Export Excel</button>
+        ${active&&!active.closed?'<button class="btn danger" onclick="closeShift()">Closing Shift</button>':''}
+      </div>
+      <div id="reportBody">${reportBody(sales,voids)}</div>
+    </div>
+  </section>`;
+  }
+
+function closeReport(){
+ if(state.reportGuest || !state.cashier){
+   state.reportGuest=false; state.cashier=''; state.shift=''; state.sessionId=null; state.cart=[]; state.screen='kasir';
+   document.getElementById('app').classList.add('hidden');
+   document.getElementById('login').classList.remove('hidden');
+   return;
+ }
+ state.reportGuest=false;
+ state.screen='kasir';
+ render();
+}
+function reportBody(sales,voids){
+ const sortedSales=[...sales].sort((a,b)=>new Date(b.date)-new Date(a.date));
+ const sortedVoids=[...voids].sort((a,b)=>new Date(b.date)-new Date(a.date));
+ const total=sortedSales.filter(x=>!x.voided).reduce((a,x)=>a+x.total,0);
+ return `<div style="padding:12px"><div class="grid2"><div class="notice">Transaksi: <b>${sortedSales.length}</b></div><div class="notice">Penjualan: <b>${rupiah(total)}</b></div></div>
+ <div class="report-tabs">
+   <button id="reportTabSales" class="report-tab active" onclick="switchReportTab('sales')">🧾 Daftar Struk</button>
+   <button id="reportTabVoids" class="report-tab" onclick="switchReportTab('voids')">↩ Daftar Void <span class="tab-count">${sortedVoids.length}</span></button>
+ </div>
+ <section id="reportSalesPanel" class="report-tabpanel">
+   <div class="field"><input id="ticketSearch" class="input" oninput="filterTickets()" placeholder="🔎 Cari nomor struk / kasir / meja..."></div>
+   <div class="scroll"><table id="ticketTable"><thead><tr><th>No</th><th>Waktu</th><th>Kasir</th><th>Shift</th><th>Meja</th><th>Total</th><th>Metode</th><th>Aksi</th></tr></thead><tbody>
+   ${sortedSales.length?sortedSales.map(s=>{const ss=getSession(s.sessionId);const canVoid=!!state.cashier&&!s.voided&&ss&&!ss.closed&&ss.id===state.sessionId;return `<tr><td>${s.id}${s.voided?' <span class="void-badge">VOID</span>':''}</td><td>${new Date(s.date).toLocaleString('id-ID')}</td><td>${esc(s.cashier)}</td><td>${s.shift}</td><td>${esc(s.customer)}</td><td>${rupiah(s.total)}</td><td>${esc(s.method)}</td><td><button class="btn light" onclick="printById('${s.id}',${s.voided?'true':'false'})">Reprint</button>${canVoid?` <button class="btn danger" onclick="voidSale('${s.id}')">Void</button>`:''}</td></tr>`}).join(''):'<tr><td colspan="8" class="empty">Belum ada transaksi.</td></tr>'}
+   </tbody></table></div>
+ </section>
+ <section id="reportVoidsPanel" class="report-tabpanel hidden">
+   <div class="scroll"><table id="voidTable"><thead><tr><th>No Struk</th><th>Waktu</th><th>Kasir</th><th>Shift</th><th>Alasan</th><th>Total</th><th>Detail</th></tr></thead><tbody>
+   ${sortedVoids.length?sortedVoids.map(v=>`<tr><td>${v.saleId}</td><td>${new Date(v.date).toLocaleString('id-ID')}</td><td>${esc(v.cashier)}</td><td>Shift ${v.shift}</td><td>${esc(v.reason)}</td><td>${rupiah(v.total)}</td><td><button class="btn light" onclick="showVoidDetail('${v.saleId}')">Lihat Detail</button></td></tr>`).join(''):'<tr><td colspan="7" class="empty">Belum ada transaksi void.</td></tr>'}
+   </tbody></table></div>
+ </section></div>`;
+}
+function switchReportTab(tab){
+ const sales=document.getElementById('reportSalesPanel'), voids=document.getElementById('reportVoidsPanel');
+ const bs=document.getElementById('reportTabSales'), bv=document.getElementById('reportTabVoids');
+ if(!sales||!voids)return;
+ const isSales=tab==='sales'; sales.classList.toggle('hidden',!isSales); voids.classList.toggle('hidden',isSales);
+ bs?.classList.toggle('active',isSales); bv?.classList.toggle('active',!isSales);
+}
+function showVoidDetail(saleId){
+ const v=db.voids.find(x=>x.saleId===saleId), s=db.sales.find(x=>x.id===saleId); if(!v||!s)return;
+ const items=s.items.map(x=>`<tr><td>${esc(x.name)}</td><td>${rupiah(x.price)}</td><td>${x.qty}</td><td>${rupiah(x.price*x.qty)}</td></tr>`).join('');
+ const sub=s.items.reduce((a,x)=>a+x.price*x.qty,0), disc=s.discountType==='%'?sub*s.discount/100:s.discount, after=Math.max(0,sub-disc), ppn=s.tax?after*s.tax/100:0;
+ modal(`<div class="modalhead"><div><h3 style="margin:0">Detail Void ${esc(s.id)}</h3><div class="mini">${new Date(v.date).toLocaleString('id-ID')} • ${esc(s.cashier)} • Shift ${s.shift}</div></div><button class="close" onclick="closeModal()">×</button></div>
+ <div class="notice"><b>Meja / Nama:</b> ${esc(s.customer)}<br><b>Alasan Void:</b> ${esc(v.reason)}</div>
+ <div class="scroll"><table><thead><tr><th>Nama Menu</th><th>Harga</th><th>Qty</th><th>Total</th></tr></thead><tbody>${items}</tbody></table></div>
+ <div class="sumline"><span>Subtotal</span><span>${rupiah(sub)}</span></div>${disc?`<div class="sumline"><span>Diskon</span><span>-${rupiah(disc)}</span></div>`:''}${s.tax?`<div class="sumline"><span>PPN ${s.tax}%</span><span>${rupiah(ppn)}</span></div>`:''}<div class="sumline" style="font-size:14px"><b>Total Void</b><b>${rupiah(s.total)}</b></div>
+ <div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn light" onclick="closeModal()">Tutup</button></div>`);
+}
+function refreshReport(){
+ const f=document.getElementById('rFrom').value,t=document.getElementById('rTo').value,sh=document.getElementById('rShift').value;
+ const sales=db.sales.filter(s=>s.businessDate>=f&&s.businessDate<=t&&(!sh||s.shift===sh));
+ const voids=db.voids.filter(v=>v.businessDate>=f&&v.businessDate<=t&&(!sh||v.shift===sh));
+ document.getElementById('reportBody').innerHTML=reportBody(sales,voids);
+}
+function filterTickets(){const q=document.getElementById('ticketSearch').value.toLowerCase();document.querySelectorAll('#ticketTable tbody tr').forEach(r=>r.style.display=r.textContent.toLowerCase().includes(q)?'':'none')}
+function voidSale(id){
+ const s=db.sales.find(x=>x.id===id);if(!s)return;
+ const session=getSession(s.sessionId);
+ if(!session||session.closed)return alert('Transaksi tidak bisa di-void karena shift sudah closing.');
+ if(!state.sessionId||s.sessionId!==state.sessionId)return alert('Void hanya dapat dilakukan pada transaksi di shift aktif kasir ini.');
+ if(s.businessDate!==session.businessDate)return alert('Transaksi bukan bagian dari tanggal operasional shift aktif.');
+ const reason=prompt('Masukkan alasan void:');if(!reason?.trim())return toast('Alasan void wajib diisi.');
+ s.voided=true;
+ db.voids.push({saleId:s.id,date:new Date().toISOString(),businessDate:s.businessDate,sessionId:s.sessionId,cashier:state.cashier,shift:state.shift,reason:reason.trim(),total:s.total});
+ save();render();printReceipt(s,true)
+}
+function printById(id,voided){const s=db.sales.find(x=>x.id===id);if(s)printReceipt(s,voided,true)}
+
+// -------------------------------------------------------------
+// HYBRID PRINTING ENGINE (DIRECT WEB BT & RAWBT FALLBACK)
+// -------------------------------------------------------------
+function generateReceiptText(s, isVoid=false, reprint=false) {
+  const W = 32; // Lebar kertas thermal (umumnya 32 karakter)
+  
+  // Fungsi helper untuk meratakan teks ke tengah
+  const center = (text) => {
+    text = String(text);
+    const left = Math.max(0, Math.floor((W - text.length) / 2));
+    return ' '.repeat(left) + text + '\n';
+  };
+
+  const sub = s.items.reduce((a, x) => a + x.price * x.qty, 0);
+  const disc = s.discountType === '%' ? (sub * s.discount / 100) : s.discount;
+  const after = sub - disc;
+  const ppn = s.tax ? (after * s.tax / 100) : 0;
+
+  // Format waktu TANPA DETIK (hanya jam dan menit)
+  const formattedDate = new Date(s.date).toLocaleString('id-ID', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).replace(/\./g, ':'); // Mengubah titik pemisah jam (00.00) menjadi colon (00:00) jika diperlukan
+
+  let text = "";
+  
+  // Header: nama warkop dicetak lebih besar (double height), tetap rata tengah.
+  const storeName = (db.settings.name || "WARKOP").toUpperCase();
+  text += '\x1b\x61\x01' + '\x1d\x21\x10' + storeName + '\x1d\x21\x00\n' + '\x1b\x61\x00';
+  if (db.settings.address) text += center(db.settings.address);
+
+  // Status Void / Reprint dibuat Center juga
+  if (isVoid) text += center("*** VOID ***");
+  if (reprint) text += center("*** REPRINT ***");
+  
+  text += "--------------------------------\n";
+  text += `No     : ${s.id}\n`;
+  text += `Waktu  : ${formattedDate}\n`;
+  text += `Kasir  : ${s.cashier}\n`;
+  text += `Meja   : ${s.customer}\n`;
+  text += "--------------------------------\n";
+  
+  s.items.forEach(x => {
+    text += `${x.name}\n`;
+    const qtyPrice = `${x.qty} x ${rupiah(x.price)}`;
+    const tot = rupiah(x.price * x.qty);
+    const space = Math.max(1, W - qtyPrice.length - tot.length);
+    text += qtyPrice + " ".repeat(space) + tot + "\n";
+  });
+  
+  text += "--------------------------------\n";
+  
+  const padRow = (lbl, val) => {
+    lbl = String(lbl); val = String(val);
+    const sp = Math.max(1, W - lbl.length - val.length);
+    return lbl + " ".repeat(sp) + val + "\n";
+  };
+  
+  text += padRow("Subtotal", rupiah(sub));
+  if (disc) text += padRow("Diskon", "-" + rupiah(disc));
+  if (s.tax) text += padRow(`PPN ${s.tax}%`, rupiah(ppn));
+  text += padRow("TOTAL", rupiah(s.total));
+  
+  if (s.method === 'Cash') {
+    text += padRow("Diterima", rupiah(s.cash));
+    text += padRow("Kembali", rupiah(s.change));
+  }
+  text += padRow("Metode", s.method);
+  text += "--------------------------------\n";
+  text += center("Terima Kasih!") + "\n\n\n"; // Menambah 2 baris enter di bawah
+
+  return text;
+}
+
+// Konversi logo Data URL menjadi bitmap ESC/POS untuk printer thermal 58 mm (384 dot).
+async function receiptLogoBytes() {
+  const src = db.settings.logo;
+  if (!src) return new Uint8Array(0);
+
+  const img = new Image();
+  img.src = src;
+  await new Promise((resolve, reject) => {
+    img.onload = resolve;
+    img.onerror = () => reject(new Error('Logo tidak dapat dibaca.'));
+  });
+
+  // Ukuran logo struk 58 mm: sekitar 20 mm lebar dan maksimal 15 mm tinggi.
+  const maxWidth = 160;
+  const maxHeight = 120;
+  const scale = Math.min(1, maxWidth / img.naturalWidth, maxHeight / img.naturalHeight);
+  const width = Math.max(1, Math.round(img.naturalWidth * scale));
+  const height = Math.max(1, Math.round(img.naturalHeight * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, width, height);
+  ctx.drawImage(img, 0, 0, width, height);
+
+  const pixels = ctx.getImageData(0, 0, width, height).data;
+  const bytesPerRow = Math.ceil(width / 8);
+  const raster = new Uint8Array(bytesPerRow * height);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * 4;
+      const gray = (pixels[i] * 299 + pixels[i + 1] * 587 + pixels[i + 2] * 114) / 1000;
+      if (gray < 160) raster[y * bytesPerRow + (x >> 3)] |= (0x80 >> (x & 7));
+    }
+  }
+
+  // GS v 0: raster bit image. Alignment center applies to the image.
+  const wL = bytesPerRow & 0xff;
+  const wH = (bytesPerRow >> 8) & 0xff;
+  const hL = height & 0xff;
+  const hH = (height >> 8) & 0xff;
+  const header = new Uint8Array([0x1b, 0x61, 0x01, 0x1d, 0x76, 0x30, 0x00, wL, wH, hL, hH]);
+  const footer = new Uint8Array([0x1b, 0x61, 0x00, 0x0a]);
+  const result = new Uint8Array(header.length + raster.length + footer.length);
+  result.set(header, 0);
+  result.set(raster, header.length);
+  result.set(footer, header.length + raster.length);
+  return result;
+}
+
+function concatPrintBytes(parts) {
+  const size = parts.reduce((n, part) => n + part.length, 0);
+  const out = new Uint8Array(size);
+  let offset = 0;
+  for (const part of parts) { out.set(part, offset); offset += part.length; }
+  return out;
+}
+
+async function buildReceiptBytes(plainText) {
+  const encoder = new TextEncoder();
+  let logo = new Uint8Array(0);
+  try { logo = await receiptLogoBytes(); }
+  catch (e) { console.warn('Logo struk dilewati:', e); }
+  return concatPrintBytes([
+    new Uint8Array([0x1b, 0x40]),
+    logo,
+    encoder.encode(plainText + '\n')
+  ]);
+}
+
+function bytesToBase64(bytes) {
+  let binary = '';
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+async function printViaRawBTText(plainText) {
+  try {
+    const bytes = await buildReceiptBytes(plainText);
+    const base64Data = bytesToBase64(bytes);
+    const intentUrl = 'intent:#Intent;' +
+      'action=ru.a404m.rawbtprinter.action.PRINT;' +
+      'category=android.intent.category.DEFAULT;' +
+      'type=text/plain;' +
+      'S.base64=' + base64Data + ';' +
+      'package=ru.a404m.rawbtprinter;' +
+      'end;';
+    window.location.href = intentUrl;
+    toast('Mengirim struk dan logo ke RawBT...');
+  } catch (e) {
+    console.error('RawBT print:', e);
+    toast('Gagal menyiapkan logo untuk dicetak.');
+  }
+}
+function receiptHTML(s,isVoid=false,reprint=false){
+  const sub=s.items.reduce((a,x)=>a+(Number(x.price)||0)*(Number(x.qty)||0),0);
+  const disc=s.discountType==='%'?sub*(Number(s.discount)||0)/100:(Number(s.discount)||0);
+  const after=sub-disc;
+  const ppn=s.tax?after*Number(s.tax)/100:0;
+  const itemRows=s.items.map(x=>{
+    const total=(Number(x.price)||0)*(Number(x.qty)||0);
+    return `<div class="r-item">
+      <div class="r-item-name">${esc(x.name)}</div>
+      <div class="r-item-detail"><span>${x.qty} × ${rupiah(x.price)}</span><span>${rupiah(total)}</span></div>
+    </div>`;
+  }).join('');
+  const flag=(isVoid||reprint)?`<div class="r-flags">${isVoid?'<span>VOID</span>':''}${reprint?'<span>REPRINT</span>':''}</div>`:'';
+  return `<div class="receipt-paper">
+    <div class="r-header">
+      ${db.settings.logo?`<img class="r-logo" src="${db.settings.logo}" alt="Logo">`:''}
+      <div class="r-store">${esc((db.settings.name||'WARKOP').toUpperCase())}</div>
+      ${db.settings.address?`<div class="r-address">${esc(db.settings.address).replace(/\n/g,'<br>')}</div>`:''}
+      ${flag}
+    </div>
+    <div class="r-divider"></div>
+    <div class="r-meta">
+      <div><span>No</span><i>:</i><b>${esc(s.id)}</b></div>
+      <div><span>Tanggal</span><i>:</i><b>${esc(new Date(s.date).toLocaleString('id-ID', {
+        day: 'numeric',
+        month: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }))}</b></div>
+      <div><span>Kasir</span><i>:</i><b>${esc(s.cashier||'-')}</b></div>
+      <div><span>Meja/Nama</span><i>:</i><b>${esc(s.customer||'-')}</b></div>
+    </div>
+    <div class="r-divider"></div>
+    <div class="r-items">${itemRows}</div>
+    <div class="r-divider"></div>
+    <div class="r-summary">
+      <div><span>Subtotal</span><b>${rupiah(sub)}</b></div>
+      ${disc?`<div><span>Diskon${s.discountType==='%'?' ('+s.discount+'%)':''}</span><b>- ${rupiah(disc)}</b></div>`:''}
+      ${s.tax?`<div><span>PPN ${s.tax}%</span><b>${rupiah(ppn)}</b></div>`:''}
+      <div class="r-total"><span>TOTAL</span>${rupiah(s.total)}</div>
+      ${s.method==='Cash'?`<div><span>Diterima</span><b>${rupiah(s.cash)}</b></div><div><span>Kembali</span><b>${rupiah(s.change)}</b></div>`:''}
+      <div><span>Metode</span><b>${esc(s.method||'-')}</b></div>
+    </div>
+    <div class="r-divider"></div>
+    <div class="r-footer"><div>Terima Kasih</div>
+  </div>`;
+}
+
+function openReceiptPreview(s, isVoid = false, reprint = false) {
+  const old = document.getElementById('receiptPreviewBackdrop');
+  if (old) old.remove();
+
+  const wrap = document.createElement('div');
+  wrap.id = 'receiptPreviewBackdrop';
+  wrap.className = 'modal receipt-preview-modal';
+
+  // Build sections separately so receipt HTML can never affect button placement.
+  const box = document.createElement('div');
+  box.className = 'receipt-preview';
+
+  const head = document.createElement('div');
+  head.className = 'modalhead receipt-no-print';
+  head.innerHTML = `
+    <div>
+      <b>${reprint ? 'Reprint Struk' : 'Preview Struk'}</b>
+    </div>
+    <button class="close" onclick="closeReceiptPreview()">×</button>
+  `;
+
+  const area = document.createElement('div');
+  area.className = 'receipt-print-area';
+
+  const paper = document.createElement('div');
+  paper.className = 'receipt-print-paper';
+  paper.dataset.saleId = s.id;
+  paper.dataset.void = isVoid ? '1' : '0';
+  paper.dataset.reprint = reprint ? '1' : '0';
+  paper.innerHTML = receiptHTML(s, isVoid, reprint);
+  area.appendChild(paper);
+
+  const actions = document.createElement('div');
+  actions.className = 'receipt-actions receipt-no-print';
+  actions.innerHTML = `
+    <button class="btn light" onclick="closeReceiptPreview()">Tutup</button>
+    <button class="btn primary" onclick="printPreviewReceipt()">Print</button>
+  `;
+
+  box.appendChild(head);
+  box.appendChild(area);
+  box.appendChild(actions);
+  wrap.appendChild(box);
+  document.body.appendChild(wrap);
+}
+function closeReceiptPreview(){const el=document.getElementById('receiptPreviewBackdrop');if(el)el.remove()}
+
+
+async function printPreviewReceipt(){
+  const preview = document.querySelector('#receiptPreviewBackdrop .receipt-print-paper');
+  if (!preview) return;
+
+  const sForPreview = db.sales.find(x => x.id === preview.dataset.saleId);
+  const plainText = sForPreview ? generateReceiptText(sForPreview, preview.dataset.void === '1', preview.dataset.reprint === '1') : (preview.dataset.plainText || '');
+
+  // 1. PRIORITAS UTAMA: Jika Bluetooth Direct sudah terhubung, cetak langsung via Bluetooth (Sama seperti Struk/Void/Reprint)
+  if (syncBTConnection()) {
+    try {
+      await writeBluetoothReceipt(plainText);
+      toast('Berhasil dicetak langsung via Bluetooth.');
+      closeReceiptPreview();
+      return;
+    } catch (e) {
+      console.error('Direct Web Bluetooth print failed:', e);
+      resetBTState();
+    }
+  }
+
+  // 2. Jika Laporan Owner DAN di Android (tapi Bluetooth BELUM terhubung), gunakan RawBT
+  if (preview.dataset.ownerReport === '1' && navigator.userAgent.includes('Android')) {
+    printViaRawBTText(plainText);
+    closeReceiptPreview();
+    return;
+  }
+
+  // 3. Jika Struk / Void / Reprint DAN di Android (tapi Bluetooth BELUM terhubung), gunakan RawBT
+  if (navigator.userAgent.includes('Android')) {
+    const sId = preview.dataset.saleId;
+    const s = db.sales.find(x => x.id === sId);
+
+    if (s) {
+      const isVoid = preview.dataset.void === '1';
+      const reprint = preview.dataset.reprint === '1';
+
+      printViaRawBTText(generateReceiptText(s, isVoid, reprint));
+      closeReceiptPreview();
+      return;
+    }
+  }
+
+  // 4. Fallback untuk browser desktop / iOS
+  window.print();
+}
+
+async function writeBluetoothReceipt(plainText){
+  if(!syncBTConnection()) throw new Error('Printer Bluetooth sudah terputus. Hubungkan ulang printer.');
+  const data=await buildReceiptBytes(plainText);
+  const canWriteWithoutResponse=!!printCharacteristic.properties?.writeWithoutResponse && typeof printCharacteristic.writeValueWithoutResponse==='function';
+  const chunkSize=180;
+  for(let i=0;i<data.length;i+=chunkSize){
+    if(!syncBTConnection()) throw new Error('Koneksi printer terputus.');
+    const chunk=data.slice(i,i+chunkSize);
+    if(canWriteWithoutResponse) await printCharacteristic.writeValueWithoutResponse(chunk);
+    else await printCharacteristic.writeValue(chunk);
+    if(i+chunkSize<data.length) await new Promise(resolve=>setTimeout(resolve,10));
+  }
+  return true;
+}
+
+
+async function writeBluetoothReportOnly(plainText) {
+  if (!syncBTConnection()) {
+    throw new Error('Printer Bluetooth belum terhubung.');
+  }
+
+  const data = new TextEncoder().encode('\x1B@' + plainText);
+
+  const canWriteWithoutResponse =
+    !!printCharacteristic.properties?.writeWithoutResponse &&
+    typeof printCharacteristic.writeValueWithoutResponse === 'function';
+
+  const canWrite =
+    !!printCharacteristic.properties?.write &&
+    typeof printCharacteristic.writeValue === 'function';
+
+  if (!canWriteWithoutResponse && !canWrite) {
+    throw new Error('Printer tidak mendukung pengiriman data.');
+  }
+
+  const chunkSize = 180;
+
+  for (let i = 0; i < data.length; i += chunkSize) {
+    if (!syncBTConnection()) {
+      throw new Error('Koneksi printer terputus.');
+    }
+
+    const chunk = data.slice(i, i + chunkSize);
+
+    if (canWriteWithoutResponse) {
+      await printCharacteristic.writeValueWithoutResponse(chunk);
+
+      if (i + chunkSize < data.length) {
+        await new Promise(resolve => setTimeout(resolve, 15));
+      }
+    } else {
+      await printCharacteristic.writeValue(chunk);
+    }
+  }
+
+  return true;
+}
+
+async function printReceipt(s,isVoid=false,reprint=false){
+  const plainText=generateReceiptText(s,isVoid,reprint);
+  // Direct print only when a real Web Bluetooth GATT connection is active.
+  if(syncBTConnection()){
+    try{
+      await writeBluetoothReceipt(plainText);
+      toast('Struk berhasil dicetak.');
+      return;
+    }catch(e){
+      console.error('Direct Web Bluetooth print failed:',e);
+      resetBTState();
+    }
+  }
+  // No direct connection: show preview first.
+  openReceiptPreview(s,isVoid,reprint);
+}
+
+// -------------------------------------------------------------
+// WEB BLUETOOTH DIRECT (BLE/GATT ONLY)
+// -------------------------------------------------------------
+let btPairingToken=0;
+let autoBTTimer=null, autoBTBusy=false;
+// Simpan object perangkat selama halaman masih terbuka; getDevices() tidak tersedia di semua Chrome Android.
+let lastBTDevice=null;
+const btDisconnectHandlers=new WeakSet();
+
+async function bt(){
+  // Tombol manual selalu tersedia; jika ditekan, hentikan timer auto-connect
+  // agar pemilihan printer oleh kasir menjadi prioritas.
+  if(autoBTTimer){clearTimeout(autoBTTimer);autoBTTimer=null;}
+  if(btState==='connected'){
+    // Jika diputus manual, hentikan percobaan sambung ulang otomatis.
+    try{localStorage.setItem('posBtAutoReconnect','0')}catch(e){}
+    try{if(btDevice?.gatt?.connected)btDevice.gatt.disconnect()}catch(e){}
+    lastBTDevice=null;
+    resetBTState();
+    toast('Bluetooth berhasil diputuskan.');
+    return;
+  }
+
+  // Pairing boleh dicoba kembali kapan saja. Ini penting jika pengguna
+  // berpindah menu sehingga dialog Bluetooth sebelumnya dibatalkan browser.
+  // Hentikan auto-reconnect saat pengguna memilih printer secara manual.
+  // Ini mencegah proses latar belakang membatalkan token pairing pengguna.
+  try{localStorage.setItem('posBtAutoReconnect','0')}catch(e){}
+  const pairingToken=++btPairingToken;
+  setBTState('pairing');
+
+  try{
+    if(!navigator.bluetooth||!navigator.bluetooth.requestDevice){
+      if(pairingToken===btPairingToken)resetBTState();
+      toast('Browser ini tidak mendukung Web Bluetooth. Gunakan RawBT.');
+      return;
+    }
+
+    // Important: classic SPP UUID 00001101 is NOT a Web Bluetooth GATT service.
+    // We only ask for known BLE printer services here.
+    const bleServices=[
+      '49535343-fe7d-4ae5-8fa9-9fafd205e455', // ISSC
+      'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
+      '000018f0-0000-1000-8000-00805f9b34fb', // Thermal Printer
+      '0000ffe0-0000-1000-8000-00805f9b34fb', // Common BLE UART
+      '0000ff00-0000-1000-8000-00805f9b34fb',
+      '0000ff10-0000-1000-8000-00805f9b34fb',
+      '0000ae30-0000-1000-8000-00805f9b34fb',
+      '0000e0ff-0000-1000-8000-00805f9b34fb'
+    ];
+
+    const device=await navigator.bluetooth.requestDevice({
+      acceptAllDevices:true,
+      optionalServices:bleServices
+    });
+
+    // Jika pengguna sudah memulai pairing baru, abaikan hasil pairing lama.
+    if(pairingToken!==btPairingToken){
+      try{if(device?.gatt?.connected)device.gatt.disconnect()}catch(e){}
+      return;
+    }
+
+    lastBTDevice=device;
+    try{
+      localStorage.setItem('posBtAutoReconnect','1');
+      localStorage.setItem('posBtDeviceId',device.id);
+    }catch(e){}
+    await connectBLEPrinter(device,pairingToken);
+    toast('Bluetooth Direct Connected: '+(device.name||'Printer BLE'));
+  }catch(e){
+    console.error('Web Bluetooth:',e);
+    // Jangan mengubah status dari percobaan lama jika sudah ada percobaan baru.
+    if(pairingToken===btPairingToken)resetBTState();
+    if(e?.name!=='NotFoundError'&&e?.name!=='AbortError'){
+      const detail=(e?.name?e.name+': ':'')+(e?.message||String(e));
+      toast('Gagal koneksi Bluetooth — '+detail);
+    }
+  }
+}
+
+
+// Sambungkan printer BLE yang sebelumnya sudah diberi izin oleh pengguna.
+// Browser tidak mengizinkan pemilihan perangkat baru tanpa tindakan pengguna,
+// tetapi perangkat yang sudah diizinkan dapat dicari kembali melalui getDevices().
+const BLE_PRINTER_SERVICES=[
+  '49535343-fe7d-4ae5-8fa9-9fafd205e455', // ISSC
+  'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
+  '000018f0-0000-1000-8000-00805f9b34fb', // Thermal Printer
+  '0000ffe0-0000-1000-8000-00805f9b34fb', // Common BLE UART
+  '0000ff00-0000-1000-8000-00805f9b34fb',
+  '0000ff10-0000-1000-8000-00805f9b34fb',
+  '0000ae30-0000-1000-8000-00805f9b34fb',
+  '0000e0ff-0000-1000-8000-00805f9b34fb'
+];
+
+async function connectBLEPrinter(device, token){
+  btDevice=device;
+  lastBTDevice=device;
+  printCharacteristic=null;
+  if(!btDisconnectHandlers.has(device)){
+    btDisconnectHandlers.add(device);
+    device.addEventListener?.('gattserverdisconnected',()=>{
+      if(btDevice===device){
+        resetBTState();
+        if(isAutoBTEnabled()){
+          toast('Printer terputus. POS akan mencoba menyambungkan kembali…');
+          scheduleAutoReconnect(2500);
+        }else{
+          toast('Bluetooth terputus. Silakan hubungkan ulang printer.');
+        }
+      }
+    });
+  }
+  if(!device?.gatt) throw new Error('Perangkat tidak menyediakan koneksi GATT.');
+  const server=await device.gatt.connect();
+  const serviceErrors=[];
+  let services=[];
+  // Ambil semua service yang diizinkan browser terlebih dahulu.
+  try{
+    services=await server.getPrimaryServices();
+  }catch(e){
+    serviceErrors.push('getPrimaryServices: '+(e?.message||e));
+  }
+  // Fallback satu per satu untuk browser/perangkat yang tidak mendukung enumerasi.
+  if(!services.length){
+    for(const uuid of BLE_PRINTER_SERVICES){
+      try{
+        const service=await server.getPrimaryService(uuid);
+        services.push(service);
+      }catch(e){
+        serviceErrors.push(uuid+': '+(e?.message||e));
+      }
+    }
+  }
+  const found=[];
+  for(const service of services){
+    try{
+      const chars=await service.getCharacteristics();
+      const writable=chars.find(c=>c.properties.write||c.properties.writeWithoutResponse);
+      found.push(service.uuid+' ['+chars.map(c=>c.uuid+':'+
+        (c.properties.write?'W':'')+
+        (c.properties.writeWithoutResponse?'WNR':'')+
+        (c.properties.notify?'N':'')).join(', ')+']');
+      if(writable){
+        printCharacteristic=writable;
+        break;
+      }
+    }catch(e){
+      serviceErrors.push(service.uuid+': '+(e?.message||e));
+    }
+  }
+  if(!printCharacteristic){
+    const detail=found.length
+      ? 'Service ditemukan tetapi tidak ada karakteristik WRITE. '+found.join(' | ')
+      : 'Tidak menemukan service BLE yang bisa diakses. '+serviceErrors.slice(0,4).join(' | ');
+    throw new Error(detail);
+  }
+  if(token!==btPairingToken)throw new Error('Percobaan koneksi dibatalkan.');
+  setBTState('connected');
+  try{
+    localStorage.setItem('posBtAutoReconnect','1');
+    localStorage.setItem('posBtDeviceId',device.id);
+  }catch(e){}
+  return true;
+}
+function isAutoBTEnabled(){
+  try{return localStorage.getItem('posBtAutoReconnect')==='1'}catch(e){return false}
+}
+function scheduleAutoReconnect(delay=5000){
+  if(btState!=='disconnected'||!isAutoBTEnabled()||autoBTTimer)return;
+  autoBTTimer=setTimeout(()=>{
+    autoBTTimer=null;
+    autoReconnectBluetooth();
+  },delay);
+}
+async function autoReconnectBluetooth(){
+  if(btState!=='disconnected'||autoBTBusy||!isAutoBTEnabled()||syncBTConnection())return;
+  if(!navigator.bluetooth)return;
+  autoBTBusy=true;
+  const token=++btPairingToken;
+  try{
+    let device=lastBTDevice; // paling andal selama halaman POS masih terbuka
+    // Setelah reload, ambil kembali perangkat yang sebelumnya sudah diizinkan browser.
+    if(!device && typeof navigator.bluetooth.getDevices==='function'){
+      const permitted=await navigator.bluetooth.getDevices();
+      let wantedId='';
+      try{wantedId=localStorage.getItem('posBtDeviceId')||''}catch(e){}
+      // Jika ID printer terakhir tersimpan, hanya pilih perangkat itu.
+      // Jangan sampai otomatis tersambung ke perangkat Bluetooth lain.
+      device=wantedId
+        ? (permitted.find(d=>d.id===wantedId)||null)
+        : (permitted[0]||null);
+    }
+    if(!device){
+      setBTState('disconnected');
+      scheduleAutoReconnect(5000);
+      return;
+    }
+    setBTState('pairing');
+    await connectBLEPrinter(device,token);
+    toast('Printer tersambung otomatis: '+(device.name||'Printer BLE'));
+  }catch(e){
+    console.warn('Auto reconnect Bluetooth:',e);
+    if(token===btPairingToken)resetBTState();
+    // Coba lagi berkala sampai printer dinyalakan dan GATT tersedia.
+    scheduleAutoReconnect(5000);
+  }finally{
+    autoBTBusy=false;
+  }
+}
+
+function setBTState(s){
+  btState=s;
+  const buttons=[
+    {b:document.getElementById('btNavBtn'),t:document.getElementById('btNavText'),connected:'Putuskan BT',disconnected:'Connect BT'},
+    {b:document.getElementById('reportBtBtn'),t:document.getElementById('reportBtText'),connected:'Putuskan BT',disconnected:'Connect Bluetooth'}
+  ];
+  buttons.forEach(({b,t,connected,disconnected})=>{
+    if(!b)return;
+    b.classList.toggle('bt-connected',s==='connected');
+    if(!t)return;
+    if(s==='pairing'){
+      t.innerHTML='<span class="bt-spin">⟳</span> Pairing…';
+      b.title='Sedang pairing. Klik lagi untuk memilih ulang printer Bluetooth';
+    }else if(s==='connected'){
+      t.textContent=connected;
+      b.title='Klik untuk memutuskan Bluetooth printer';
+    }else{
+      t.textContent=disconnected;
+      b.title='Bluetooth Direct (BLE/GATT).';
+    }
+  });
+}
+
+// Sinkronkan indikator dengan status GATT yang sebenarnya, bukan hanya flag lama.
+function resetBTState(){
+  btDevice=null;
+  printCharacteristic=null;
+  btState='disconnected';
+  setBTState('disconnected');
+}
+function syncBTConnection(){
+  if(btState==='connected'){
+    const actuallyConnected=!!(btDevice?.gatt?.connected && printCharacteristic);
+    if(!actuallyConnected){
+      resetBTState();
+      return false;
+    }
+    return true;
+  }
+  return false;
+}
+// Polling membantu memperbarui tombol ketika printer mati/di luar jangkauan.
+setInterval(()=>{
+  if(btState==='connected') syncBTConnection();
+  else if(btState==='disconnected' && isAutoBTEnabled()) scheduleAutoReconnect(1000);
+},1500);
+window.addEventListener('pageshow',()=>{
+  if(btState==='connected') syncBTConnection();
+  else if(btState==='disconnected' && isAutoBTEnabled()) scheduleAutoReconnect(500);
+});
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden && btState==='disconnected' && isAutoBTEnabled()) scheduleAutoReconnect(500);
+});
+
+function openSettings(){state.screen='pengaturan';render()}
+function settingsHTML(){return `<section class="panel settings-shell"><div class="settings-window"><div class="report-titlebar"><div><b>⚙️ Pengaturan</b><div class="mini">Konfigurasi tempat, menu, QRIS, dan backup</div></div><button class="close" onclick="closeSettings()">×</button></div><div style="padding:16px"><div class="settingmenu"><button class="settingtab active">Umum</button><button class="settingtab" onclick="menuManager()">Daftar Menu</button><button class="settingtab" onclick="backupData()">Backup</button><button class="settingtab" onclick="restoreData()">Restore</button><button class="settingtab danger" onclick="wipe()">Hapus Semua Data</button></div><div class="grid2"><div class="field"><label>Nama Tempat</label><input id="setName" class="input" value="${esc(db.settings.name)}"></div><div class="field"><label>PPN (%)</label><input id="setTax" class="input" type="number" min="0" value="${db.settings.tax||''}"></div></div><div class="field"><label>Alamat</label><input id="setAddress" class="input" value="${esc(db.settings.address)}"></div><div class="grid2"><div class="field"><label>Logo Struk</label><input id="logoFile" type="file" accept="image/*" class="input">${db.settings.logo?`<div style="margin-top:8px;display:flex;align-items:center;gap:8px"><img src="${db.settings.logo}" alt="Logo tersimpan" style="max-width:100px;max-height:65px;object-fit:contain;border:1px solid var(--line);border-radius:8px;padding:4px"><button class="btn danger" onclick="removeSavedImage('logo')">Hapus Logo</button></div>`:'<div class="mini" style="margin-top:6px">Belum ada logo tersimpan.</div>'}</div><div class="field"><label>QRIS</label><input id="qrisFile" type="file" accept="image/*" class="input">${db.settings.qris?`<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><img src="${db.settings.qris}" alt="QRIS tersimpan" style="max-width:100px;max-height:100px;object-fit:contain;border:1px solid var(--line);border-radius:8px;padding:4px"><button class="btn danger" onclick="removeSavedImage('qris')">Hapus QRIS</button></div>`:'<div class="mini" style="margin-top:6px">Belum ada QRIS tersimpan.</div>'}<div class="settings-save-inline"><button class="btn primary" onclick="saveSettings()">Simpan Pengaturan</button></div></div></div></div></section>`}
+function closeSettings(){state.screen='kasir';render()}
+async function saveSettings(){
+  try{
+    const logo=await file64(document.getElementById('logoFile').files[0]);
+    const qris=await file64(document.getElementById('qrisFile').files[0]);
+    db.settings.name=document.getElementById('setName').value.trim()||'Warkop';
+    db.settings.address=document.getElementById('setAddress').value.trim();
+    db.settings.tax=Number(document.getElementById('setTax').value)||0;
+    if(logo)db.settings.logo=logo;if(qris)db.settings.qris=qris;
+    save();render();toast('Pengaturan berhasil disimpan.');
+  }catch(e){toast('Gagal menyimpan pengaturan: '+(e.message||'Terjadi kesalahan.'));}
+}
+function removeSavedImage(type){
+  const isLogo=type==='logo';
+  const label=isLogo?'logo':'QRIS';
+  if(!confirm(`Hapus ${label} yang tersimpan?`))return;
+  try{
+    if(isLogo)db.settings.logo='';else db.settings.qris='';
+    save();render();
+    toast(`${label} berhasil dihapus.`);
+  }catch(e){toast(`Gagal menghapus ${label}: `+(e.message||'Terjadi kesalahan.'));}
+}
+function file64(f){return new Promise(r=>{if(!f)return r('');const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(f)})}
+function menuManager(){modal(`<div class="modalhead"><h3>Daftar Menu</h3><button class="close" onclick="closeModal()">×</button></div><div id="menuEditor">${menuEditorHTML()}</div>`)}
+function getCategoryOptions(selected = '') {
+  const categories = [
+    'Kopi',
+    'Non Kopi',
+    'Makanan',
+    'Cemilan',
+    'Additional',
+    'Lain-lain',
+    ...db.products.map(p => p.cat)
+  ];
+
+  const unique = [...new Set(categories.filter(Boolean))];
+
+  return `
+    <option value="">Pilih Kategori</option>
+    ${unique.map(c => `
+      <option value="${esc(c)}" ${c === selected ? 'selected' : ''}>
+        ${esc(c)}
+      </option>
+    `).join('')}
+  `;
+}
+function menuEditorHTML() {
+  return `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <button class="btn light" onclick="downloadMenuTemplate()">Download Template Excel</button>
+      <button class="btn primary" onclick="document.getElementById('menuExcelFile').click()">Upload Menu Excel</button>
+      <input id="menuExcelFile" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden" onchange="uploadMenuExcel(this.files[0])">
+    </div>
+    
+    <div class="grid2">
+      <div class="field">
+        <label>Kategori</label>
+        <select id="mCat" class="select">
+          ${getCategoryOptions()}
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Nama Produk</label>
+        <input id="mName" class="input" placeholder="Nama menu">
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="field">
+        <label>Harga</label>
+        <input id="mPrice" class="input" type="number" placeholder="10000">
+      </div>
+
+      <div class="field">
+        <label>Foto</label>
+        <input id="mFile" class="input" type="file" accept="image/*">
+      </div>
+    </div>
+
+    <button class="btn primary" onclick="addProduct()">
+      + Tambahkan
+    </button>
+
+    <div class="scroll" style="margin-top:15px">
+      <table>
+        <thead>
+          <tr>
+            <th>Menu</th>
+            <th>Kategori</th>
+            <th>Harga</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${db.products.map(p => `
+            <tr>
+              <td>${esc(p.name)}</td>
+              <td>${esc(p.cat)}</td>
+              <td>${rupiah(p.price)}</td>
+              <td>
+                <button class="btn light" onclick="editProduct('${p.id}')">Edit</button>
+                <button class="btn danger" onclick="deleteProduct('${p.id}')">Hapus</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function downloadMenuTemplate(){
+  const blob=xlsxBlob([{name:'Template Menu',rows:[['Kategori','Menu','Harga'],['Kopi','Kopi Susu',14000]]}]);
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='Template_Penambahan_Menu.xlsx';
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function normalizeMenuName(value){
+  return String(value??'').normalize('NFKC').trim().replace(/\s+/g,' ').toLocaleLowerCase('id-ID');
+}
+function toProperCase(value){
+  return String(value??'').normalize('NFKC').trim().replace(/\s+/g,' ')
+    .toLocaleLowerCase('id-ID')
+    .replace(/(^|[\s-])([\p{L}])/gu,(match,separator,letter)=>separator+letter.toLocaleUpperCase('id-ID'));
+}
+async function uploadMenuExcel(file){
+  if(!file)return;
+  try{
+    const rows=await readMenuXlsx(file);
+    if(!rows.length)throw new Error('File Excel tidak memiliki data menu.');
+    const header=rows[0].map(x=>String(x??'').trim().toLocaleLowerCase('id-ID'));
+    const ci={cat:header.indexOf('kategori'),name:header.indexOf('menu'),price:header.indexOf('harga')};
+    if(Object.values(ci).some(i=>i<0))throw new Error('Header wajib harus persis: Kategori, Menu, Harga.');
+    const parsed=[];
+    for(let i=1;i<rows.length;i++){
+      const r=rows[i]||[];
+      if(r.every(v=>String(v??'').trim()===''))continue;
+      const cat=toProperCase(r[ci.cat]),name=toProperCase(r[ci.name]);
+      const raw=String(r[ci.price]??'').trim();
+      const price=typeof r[ci.price]==='number'?r[ci.price]:Number(raw.replace(/[^\d.-]/g,''));
+      if(!cat||!name||!Number.isFinite(price)||price<=0)
+        throw new Error(`Data baris ${i+1} tidak valid. Pastikan Kategori, Menu, dan Harga terisi dengan benar.`);
+      parsed.push({cat,name,price:Math.round(price)});
+    }
+    if(!parsed.length)throw new Error('Tidak ada daftar menu yang dapat diproses.');
+    if(!confirm(`Proses ${parsed.length} daftar menu dari Excel?`))return;
+    let added=0,updated=0;
+    parsed.forEach((item,i)=>{
+      const key=normalizeMenuName(item.name);
+      const existing=db.products.find(p=>normalizeMenuName(p.name)===key);
+      if(existing){
+        existing.cat=item.cat;existing.name=item.name;existing.price=item.price;
+        existing.icon=iconFor(item.cat);existing.img='';
+        updated++;
+      }else{
+        db.products.push({id:'p'+Date.now()+'_'+i+'_'+Math.random().toString(36).slice(2,6),cat:item.cat,name:item.name,price:item.price,icon:iconFor(item.cat),img:''});
+        added++;
+      }
+    });
+    save();menuManager();render();
+    toast(`Upload Excel selesai: ${added} menu baru ditambahkan dan ${updated} menu diperbarui.`);
+  }catch(err){toast('Upload Excel gagal: '+(err.message||err));}
+}
+async function readMenuXlsx(file){
+  if(typeof DecompressionStream==='undefined')throw new Error('Browser ini belum mendukung pembacaan Excel. Gunakan Chrome versi terbaru.');
+  const bytes=new Uint8Array(await file.arrayBuffer());
+  const view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
+  const findSig=(sig,start=0)=>{for(let i=start;i<=bytes.length-4;i++)if(view.getUint32(i,true)===sig)return i;return -1};
+  const eocd=findSig(0x06054b50,Math.max(0,bytes.length-65557));
+  if(eocd<0)throw new Error('Format file Excel tidak valid.');
+  const count=view.getUint16(eocd+10,true),centralOffset=view.getUint32(eocd+16,true);
+  const entries={};let pos=centralOffset;
+  for(let n=0;n<count;n++){
+    if(view.getUint32(pos,true)!==0x02014b50)throw new Error('Struktur Excel tidak valid.');
+    const method=view.getUint16(pos+10,true),compressed=view.getUint32(pos+20,true),nameLen=view.getUint16(pos+28,true),extraLen=view.getUint16(pos+30,true),commentLen=view.getUint16(pos+32,true),localOffset=view.getUint32(pos+42,true);
+    const name=new TextDecoder().decode(bytes.slice(pos+46,pos+46+nameLen));
+    const ln=view.getUint16(localOffset+26,true),le=view.getUint16(localOffset+28,true),start=localOffset+30+ln+le;
+    entries[name]={method,data:bytes.slice(start,start+compressed)};
+    pos+=46+nameLen+extraLen+commentLen;
+  }
+  async function unzip(name){
+    const e=entries[name];if(!e)return '';
+    let out=e.data;
+    if(e.method===8){
+      const ds=new DecompressionStream('deflate-raw');
+      out=new Uint8Array(await new Response(new Blob([out]).stream().pipeThrough(ds)).arrayBuffer());
+    }else if(e.method!==0)throw new Error('Kompresi file Excel tidak didukung.');
+    return new TextDecoder().decode(out);
+  }
+  const parse=x=>new DOMParser().parseFromString(x,'application/xml');
+  const wb=parse(await unzip('xl/workbook.xml')),rels=parse(await unzip('xl/_rels/workbook.xml.rels'));
+  const firstSheet=wb.getElementsByTagName('sheet')[0];if(!firstSheet)throw new Error('Sheet Excel tidak ditemukan.');
+  const rid=firstSheet.getAttribute('r:id');
+  const rel=[...rels.getElementsByTagName('Relationship')].find(x=>x.getAttribute('Id')===rid);
+  if(!rel)throw new Error('Relasi sheet Excel tidak ditemukan.');
+  let target=rel.getAttribute('Target').replace(/^\//,'');
+  if(!target.startsWith('xl/'))target='xl/'+target.replace(/^\.?\//,'');
+  const sheetDoc=parse(await unzip(target));
+  const ssDoc=entries['xl/sharedStrings.xml']?parse(await unzip('xl/sharedStrings.xml')):null;
+  const shared=ssDoc?[...ssDoc.getElementsByTagName('si')].map(si=>[...si.getElementsByTagName('t')].map(t=>t.textContent).join('')):[];
+  const colIndex=ref=>{let n=0;for(const c of ref.match(/[A-Z]+/i)?.[0]||'A')n=n*26+c.toUpperCase().charCodeAt(0)-64;return n-1};
+  return [...sheetDoc.getElementsByTagName('row')].map(row=>{
+    const arr=[];
+    [...row.getElementsByTagName('c')].forEach(c=>{
+      const idx=colIndex(c.getAttribute('r')||'A1'),type=c.getAttribute('t'),v=c.getElementsByTagName('v')[0]?.textContent??'';
+      let value=type==='s'?shared[Number(v)]??'':type==='inlineStr'?[...c.getElementsByTagName('t')].map(t=>t.textContent).join(''):v;
+      arr[idx]=type==='s'||type==='inlineStr'?value:(v===''?'':Number(v));
+    });
+    return arr;
+  });
+}
+async function addProduct(){
+  const cat=toProperCase(document.getElementById('mCat').value),name=toProperCase(document.getElementById('mName').value),price=Number(document.getElementById('mPrice').value);
+  if(!cat||!name||!price||price<=0)return toast('Kategori, nama menu, dan harga wajib diisi dengan benar.','error');
+  if(db.products.some(p=>normalizeMenuName(p.name)===normalizeMenuName(name)))
+    return toast(`Menu "${name}" sudah terdaftar.`, 'error');
+  try{
+    const img=await file64(document.getElementById('mFile').files[0]);
+    db.products.push({id:'p'+Date.now(),cat,name,price,icon:iconFor(cat),img});
+    save();menuManager();render();toast('Menu baru berhasil ditambahkan.');
+  }catch(e){toast('Gagal menambahkan menu: '+(e.message||'Terjadi kesalahan.'),'error');}
+}
+function editProduct(id) {
+  const p = db.products.find(x => x.id === id);
+  if (!p) return;
+
+  modal(`
+    <div class="modalhead">
+      <h3>Edit Menu</h3>
+      <button class="close" onclick="closeModal()">×</button>
+    </div>
+
+    <div class="field">
+      <label>Nama Produk</label>
+      <input id="editName" class="input" value="${esc(p.name)}">
+    </div>
+
+    <div class="field">
+      <label>Harga</label>
+      <input id="editPrice" class="input" type="number" value="${p.price}">
+    </div>
+
+    <div class="field">
+      <label>Kategori</label>
+      <select id="editCat" class="select">
+        ${getCategoryOptions(p.cat)}
+      </select>
+    </div>
+
+    <button class="btn primary" style="width:100%"
+      onclick="saveEditedProduct('${p.id}')">
+      Simpan Perubahan
+    </button>
+  `);
+}
+
+function saveEditedProduct(id) {
+  const p = db.products.find(x => x.id === id);
+  if (!p) return;
+
+  const name = toProperCase(document.getElementById('editName').value);
+  const price = Number(document.getElementById('editPrice').value);
+  const cat = toProperCase(document.getElementById('editCat').value);
+
+  if (!name || !price || !cat) {
+    return toast('Nama, harga, dan kategori wajib diisi.');
+  }
+
+  p.name = name;
+  p.price = price;
+  p.cat = cat;
+  p.icon = iconFor(cat);
+
+  save();
+  closeModal();
+  menuManager();
+}
+function deleteProduct(id){if(confirm('Hapus menu ini?')){db.products=db.products.filter(p=>p.id!==id);save();menuManager();render()}}
+function backupData(){
+  try{
+    const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download='backup-warkop-'+dateKey()+'.json';
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+    toast('Backup berhasil dibuat dan diunduh.');
+  }catch(e){toast('Backup gagal: '+(e.message||'Terjadi kesalahan.'));}
+}
+function restoreData(){
+  const i=document.createElement('input');i.type='file';i.accept='.json,application/json';
+  i.onchange=()=>{
+    const f=i.files&&i.files[0];if(!f)return;
+    const r=new FileReader();
+    r.onerror=()=>toast('Restore gagal: file tidak dapat dibaca.');
+    r.onload=()=>{
+      try{
+        const x=JSON.parse(r.result);
+        if(!x||typeof x!=='object'||!x.settings||!Array.isArray(x.products))throw new Error('Struktur file backup tidak valid.');
+        const previous=db;db=x;
+        try{save();}catch(err){db=previous;throw err;}
+        toast('Restore berhasil. Data berhasil dipulihkan.');render();
+      }catch(e){toast('Restore gagal: '+(e.message||'File backup tidak valid.'));}
+    };
+    r.readAsText(f);
+  };
+  i.click();
+}
+function wipe(){if(confirm('Hapus SEMUA data termasuk transaksi dan menu?')){localStorage.removeItem(KEY);db=load();state.cart=[];toast('Semua data dihapus.');render()}}
+function modal(html){
+ const m=document.getElementById('modal');
+ const isPayment=html.includes('Metode Pembayaran');
+ const isMenuEditor=html.includes('Daftar Menu') && html.includes('menuEditor');
+ m.classList.toggle('payment-modal',isPayment);
+ m.classList.toggle('menu-editor-modal',isMenuEditor);
+ m.innerHTML=`<div class="modalbox${isPayment?' payment-modalbox':isMenuEditor?' menu-editor-modalbox':''}">${html}</div>`;
+ m.classList.remove('hidden');
+}
+function closeModal(){document.getElementById('modal').classList.add('hidden')}
+function generateOwnerDailyReportText(f, t, sh, sales) {
+  const totalItem = sales.reduce((sum, s) => sum + (s.items || []).reduce((a, x) => a + Number(x.qty || 0), 0), 0);
+  const totalPenjualan = sales.reduce((sum, s) => sum + Number(s.total || 0), 0);
+
+  const payments = {};
+  sales.forEach(s => {
+    const method = (s.method || 'Lainnya').trim() || 'Lainnya';
+    payments[method] = (payments[method] || 0) + Number(s.total || 0);
+  });
+
+  const shifts = {};
+  sales.forEach(s => {
+    const key = String(s.shift || '-');
+    if (!shifts[key]) shifts[key] = { count: 0, total: 0 };
+    shifts[key].count++;
+    shifts[key].total += Number(s.total || 0);
+  });
+
+  const dateLabel = f === t
+    ? `${String(Number(f.slice(8, 10)))} / ${String(Number(f.slice(5, 7)))} / ${f.slice(0, 4)}`
+    : `${String(Number(f.slice(8, 10)))} / ${String(Number(f.slice(5, 7)))} / ${f.slice(0, 4)}\n${String(Number(t.slice(8, 10)))} / ${String(Number(t.slice(5, 7)))} / ${t.slice(0, 4)}`;
+
+  // Mengambil tanggal & jam cetak saat ini (tanpa detik)
+  const now = new Date();
+  const printDate = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+  const W = 32;
+  const line = '-'.repeat(W);
+  const padRow = (label, value) => {
+    label = String(label); value = String(value);
+    const spaces = Math.max(1, W - label.length - value.length);
+    return label + ' '.repeat(spaces) + value + '\n';
+  };
+  const center = (text) => {
+    text = String(text);
+    const left = Math.max(0, Math.floor((W - text.length) / 2));
+    return ' '.repeat(left) + text + '\n';
+  };
+
+  let text = '';
+  // Nama toko dibuat tebal, rata tengah, dan double-height pada printer ESC/POS 58 mm.
+  const reportStoreName = (db.settings.name || 'WARKOP').toUpperCase();
+  text += '\x1b\x61\x01' + '\x1b\x45\x01' + '\x1d\x21\x10' +
+    reportStoreName + '\x1d\x21\x00' + '\x1b\x45\x00\n' + '\x1b\x61\x00';
+  text += center('LAPORAN PENJUALAN HARIAN');
+  text += '\n';
+  text += `Tanggal : ${dateLabel}\n`;
+  if (sh) text += `Shift   : ${sh}\n`;
+  text += line + '\n';
+  text += padRow('Transaksi', sales.length);
+  text += padRow('Total Item', totalItem);
+  text += padRow('Penjualan', rupiah(totalPenjualan));
+  text += line + '\n';
+  text += 'PEMBAYARAN\n';
+
+  const paymentKeys = Object.keys(payments);
+  if (paymentKeys.length) {
+    paymentKeys.forEach(method => {
+      text += padRow(method, rupiah(payments[method]));
+    });
+  } else {
+    text += padRow('-', rupiah(0));
+  }
+
+  text += line + '\n';
+  text += 'REKAP PER SHIFT\n';
+
+  const shiftOrder = ['1', '2', '3'];
+  const existing = Object.keys(shifts).filter(x => !shiftOrder.includes(x));
+  const shiftKeys = [...shiftOrder.filter(x => shifts[x]), ...existing];
+  if (shiftKeys.length) {
+    shiftKeys.forEach(k => {
+      text += padRow(`Shift ${k} (${shifts[k].count} trx)`, rupiah(shifts[k].total));
+    });
+  } else {
+    text += padRow('Shift - (0 trx)', rupiah(0));
+  }
+
+  text += line + '\n';
+  text += padRow('TOTAL PENJUALAN', rupiah(totalPenjualan));
+  text += line + '\n';
+  
+  // Perintah ESC/POS untuk Font Kecil (Font B)
+  const FONT_SMALL_ON = '\x1b\x4d\x01';
+  const FONT_NORMAL = '\x1b\x4d\x00';
+  text += center(`${FONT_SMALL_ON}Dicetak: ${printDate}${FONT_NORMAL}`);
+
+  text += '\n\n';
+  return text;
+}
+
+function ownerDailyReportHTML(f,t,sh,sales){
+  const totalItem=sales.reduce((sum,s)=>sum+(s.items||[]).reduce((a,x)=>a+Number(x.qty||0),0),0);
+  const totalPenjualan=sales.reduce((sum,s)=>sum+Number(s.total||0),0);
+
+  const payments={};
+  sales.forEach(s=>{
+    const method=(s.method||'Lainnya').trim()||'Lainnya';
+    payments[method]=(payments[method]||0)+Number(s.total||0);
+  });
+
+  const shifts={};
+  sales.forEach(s=>{
+    const key=String(s.shift||'-');
+    if(!shifts[key])shifts[key]={count:0,total:0};
+    shifts[key].count++;
+    shifts[key].total+=Number(s.total||0);
+  });
+
+  const dateLabel=f===t
+    ? `${String(Number(f.slice(8,10)))} / ${String(Number(f.slice(5,7)))} / ${f.slice(0,4)}`
+    : `${String(Number(f.slice(8,10)))} / ${String(Number(f.slice(5,7)))} / ${f.slice(0,4)} - ${String(Number(t.slice(8,10)))} / ${String(Number(t.slice(5,7)))} / ${t.slice(0,4)}`;
+
+  const row=(label,value,total=false)=>`
+    <div class="owner-preview-row${total?' owner-preview-total':''}">
+      <span>${esc(label)}</span><b>${esc(value)}</b>
+    </div>`;
+
+  const paymentRows=Object.keys(payments).length
+    ? Object.entries(payments).map(([method,total])=>row(method,rupiah(total))).join('')
+    : row('-',rupiah(0));
+
+  const shiftOrder=['1','2','3'];
+  const existing=Object.keys(shifts).filter(x=>!shiftOrder.includes(x));
+  const shiftKeys=[...shiftOrder.filter(x=>shifts[x]),...existing];
+  const shiftRows=shiftKeys.length
+    ? shiftKeys.map(k=>row(`Shift ${k} (${shifts[k].count} trx)`,rupiah(shifts[k].total))).join('')
+    : row('Shift - (0 trx)',rupiah(0));
+
+  return `<div class="owner-report-paper">
+    <div class="owner-preview-header">
+      ${db.settings.logo?`<img class="owner-preview-logo" src="${db.settings.logo}" alt="Logo">`:''}
+      <div class="owner-preview-store">${esc((db.settings.name||'WARKOP').toUpperCase())}</div>
+      <div class="owner-preview-heading">LAPORAN PENJUALAN HARIAN</div>
+    </div>
+    <div class="owner-preview-divider"></div>
+    <div class="owner-preview-meta">Tanggal : ${esc(dateLabel)}${sh?`<br>Shift   : ${esc(sh)}`:''}</div>
+    <div class="owner-preview-divider"></div>
+    ${row('Transaksi',String(sales.length))}
+    ${row('Total Item',String(totalItem))}
+    ${row('Penjualan',rupiah(totalPenjualan))}
+    <div class="owner-preview-divider"></div>
+    <div class="owner-preview-section">PEMBAYARAN</div>
+    ${paymentRows}
+    <div class="owner-preview-divider"></div>
+    <div class="owner-preview-section">REKAP PER SHIFT</div>
+    ${shiftRows}
+    <div class="owner-preview-divider"></div>
+    ${row('TOTAL PENJUALAN',rupiah(totalPenjualan),true)}
+    <div class="owner-preview-footer">Dicetak: ${esc(new Date().toLocaleString('id-ID'))}</div>
+  </div>`;
+}
+
+function openOwnerDailyReportPreview(f, t, sh, sales){
+  const old = document.getElementById('receiptPreviewBackdrop');
+  if(old) old.remove();
+
+  const wrap = document.createElement('div');
+  wrap.id = 'receiptPreviewBackdrop';
+  wrap.className = 'modal receipt-preview-modal';
+
+  const box = document.createElement('div');
+  box.className = 'receipt-preview';
+
+  const head = document.createElement('div');
+  head.className = 'modalhead receipt-no-print';
+  head.innerHTML = `
+    <div>
+      <b>Preview Laporan</b>
+    </div>
+    <button class="close" onclick="closeReceiptPreview()">×</button>`;
+
+  const area = document.createElement('div');
+  area.className = 'receipt-print-area';
+
+  const paper = document.createElement('div');
+  paper.className = 'receipt-print-paper';
+  paper.dataset.ownerReport = '1';
+  paper.dataset.ownerFrom = f;
+  paper.dataset.ownerTo = t;
+  paper.dataset.ownerShift = sh || '';
+  
+  const plainText = generateOwnerDailyReportText(f, t, sh, sales);
+  paper.dataset.plainText = plainText;
+
+  paper.innerHTML = ownerDailyReportHTML(f, t, sh, sales);
+  area.appendChild(paper);
+
+  const actions = document.createElement('div');
+  actions.className = 'receipt-actions receipt-no-print';
+  actions.innerHTML = `
+    <button class="btn light" onclick="closeReceiptPreview()">Tutup</button>
+    <button class="btn primary" onclick="printOwnerReportPreview()">Print</button>`;
+
+  box.appendChild(head);
+  box.appendChild(area);
+  box.appendChild(actions);
+  wrap.appendChild(box);
+  document.body.appendChild(wrap);
+}
+
+
+async function printOwnerReportPreview() {
+  const preview = document.querySelector(
+    '#receiptPreviewBackdrop .receipt-print-paper[data-owner-report="1"]'
+  );
+
+  if (!preview) {
+    toast('Preview laporan tidak ditemukan.');
+    return;
+  }
+
+  const sForPreview = db.sales.find(x => x.id === preview.dataset.saleId);
+  const plainText = sForPreview ? generateReceiptText(sForPreview, preview.dataset.void === '1', preview.dataset.reprint === '1') : (preview.dataset.plainText || '');
+
+  if (!plainText.trim()) {
+    toast('Isi laporan kosong.');
+    return;
+  }
+
+  // 1. Bluetooth Direct: khusus laporan.
+  if (syncBTConnection()) {
+    try {
+      toast('Mengirim laporan ke printer...');
+
+      const success = await writeBluetoothReportOnly(plainText);
+
+      if (!success) {
+        throw new Error('Pengiriman laporan gagal.');
+      }
+
+      await writeBluetoothReportOnly('\n\n\n\n');
+
+      toast('Laporan berhasil dicetak.');
+      closeReceiptPreview();
+      return;
+
+    } catch (e) {
+      console.error('Gagal mencetak laporan:', e);
+      toast('Cetak langsung gagal. Coba tombol Print lagi atau periksa koneksi.');
+      return;
+    }
+  }
+
+  // 2. Android: gunakan RawBT jika Bluetooth Direct tidak aktif.
+  if (/Android/i.test(navigator.userAgent)) {
+    try {
+      printViaRawBTText(plainText);
+      toast('Perintah cetak laporan dikirim ke RawBT.');
+      closeReceiptPreview();
+    } catch (e) {
+      console.error('Gagal membuka RawBT:', e);
+      toast('RawBT gagal dibuka. Periksa instalasi RawBT.');
+    }
+    return;
+  }
+
+  // 3. Browser komputer.
+  window.print();
+}
+
+
+
+async function printOwnerDailyReport() {
+  const f = document.getElementById('rFrom')?.value || dateKey();
+  const t = document.getElementById('rTo')?.value || f;
+  const sh = document.getElementById('rShift')?.value || '';
+
+  if (!f || !t) {
+    return toast('Tanggal laporan belum dipilih.');
+  }
+
+  if (f > t) {
+    return toast('Tanggal mulai tidak boleh lebih besar dari tanggal akhir.');
+  }
+
+  // Filter transaksi berdasarkan tanggal, shift, dan status void.
+  const sales = db.sales.filter(s => {
+    if (!s.businessDate) return false;
+
+    const tglMurniData = String(s.businessDate).substring(0, 10);
+    const matchDate = tglMurniData >= f && tglMurniData <= t;
+    const matchShift = !sh || String(s.shift) === String(sh);
+    const notVoided = !s.voided;
+
+    return matchDate && matchShift && notVoided;
+  });
+
+  if (sales.length === 0) {
+    return toast('Tidak ada transaksi untuk tanggal/shift ini.');
+  }
+
+  // Buat teks laporan tanpa menghapus karakter dari hasil aslinya.
+  const plainText = String(
+    generateOwnerDailyReportText(f, t, sh, sales)
+  );
+
+  // Jika Bluetooth Direct terhubung, gunakan fungsi khusus laporan.
+  if (syncBTConnection()) {
+    try {
+      toast('Sedang mengirim laporan ke printer...');
+
+      const success = await writeBluetoothReportOnly(plainText);
+
+      if (!success) {
+        throw new Error('Pengiriman laporan gagal.');
+      }
+
+      // Majukan kertas setelah seluruh teks laporan dikirim.
+      const paperFeedSuccess =
+        await writeBluetoothReportOnly('\n\n\n\n');
+
+      if (!paperFeedSuccess) {
+        throw new Error('Perintah maju kertas gagal dikirim.');
+      }
+
+      toast('Laporan berhasil dikirim ke printer Bluetooth.');
+      return;
+
+    } catch (e) {
+      // Pertahankan koneksi agar tidak langsung memutus Bluetooth
+      // hanya karena satu operasi cetak gagal.
+      console.error('Gagal mengirim laporan Bluetooth:', e);
+
+      toast(
+        'Laporan gagal dikirim. Periksa printer dan koneksi Bluetooth.'
+      );
+
+      return;
+    }
+  }
+
+  // Preview hanya dibuka jika Bluetooth Direct belum terhubung.
+  openOwnerDailyReportPreview(f, t, sh, sales);
+}
+
+
+
+function exportExcel(){
+ const f=document.getElementById('rFrom').value,t=document.getElementById('rTo').value,sh=document.getElementById('rShift').value;
+
+ if(sh){
+   const active=getActiveSession(sh, sh==='3' ? ((new Date(t+'T12:00:00')).getTime() ? dateKey(new Date(t+'T12:00:00')) : t) : t);
+   const activeSessions=(db.shiftSessions||[]).filter(s=>s.shift===String(sh)&&s.businessDate>=f&&s.businessDate<=t&&!s.closed);
+   if(activeSessions.length){
+     return alert(`Laporan Excel Shift ${sh} belum bisa ditarik karena shift masih aktif. Lakukan Closing Shift terlebih dahulu.`);
+   }
+ }else{
+   const activeSessions=(db.shiftSessions||[]).filter(s=>s.businessDate>=f&&s.businessDate<=t&&!s.closed);
+   if(activeSessions.length){
+     return alert('Laporan Excel belum bisa ditarik karena masih ada shift aktif pada rentang tanggal tersebut. Lakukan Closing Shift terlebih dahulu.');
+   }
+ }
+
+ const allSales=db.sales.filter(s=>s.businessDate>=f&&s.businessDate<=t&&(!sh||s.shift===sh));
+ const sales=allSales.filter(s=>!s.voided);
+ const voids=db.voids.filter(v=>v.businessDate>=f&&v.businessDate<=t&&(!sh||v.shift===sh));
+
+ const rekap=[['No Struk','Tanggal/Waktu','Kasir','Shift','Meja/Nama','Total Subtotal','Diskon Struk','PPN','Total Akhir','Metode']];
+ sales.forEach(s=>{
+   const sub=s.items.reduce((a,x)=>a+x.price*x.qty,0);
+   const disc=s.discountType==='%'?sub*s.discount/100:s.discount;
+   const after=sub-disc;
+   const ppn=s.tax?after*s.tax/100:0;
+   rekap.push([s.id,new Date(s.date).toLocaleString('id-ID'),s.cashier,'Shift '+s.shift,s.customer,sub,disc,ppn,s.total,s.method]);
+ });
+ const totalAkhir=sales.reduce((a,s)=>a+s.total,0);
+ rekap.push(['','','','','TOTAL PENJUALAN','','','',totalAkhir,'']);
+
+ const detail=[['No Struk','Tanggal Transaksi','Nama Barang','Harga Satuan','Qty','Total Harga']];
+ sales.forEach(s=>s.items.forEach(x=>detail.push([s.id,new Date(s.date).toLocaleDateString('id-ID'),x.name,x.price,x.qty,x.price*x.qty])));
+
+ const audit=[['LAPORAN AUDIT TRANSAKSI VOID (BATAL)'],[new Date(f+'T00:00:00').toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})+(f!==t?' - '+new Date(t+'T00:00:00').toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}):'')],[db.settings.name||'WARKOP'],[],['Waktu / Tanggal','No Struk','Kasir / Shift','Detail Barang','Nominal Batal','Alasan Void']];
+ voids.forEach(v=>{
+   const s=db.sales.find(x=>x.id===v.saleId);
+   const detailBarang=s?s.items.map(x=>`${x.name} x${x.qty}`).join(', '):'-';
+   audit.push([new Date(v.date).toLocaleString('id-ID'),v.saleId,`${v.cashier} (Shift ${v.shift})`,detailBarang,v.total,v.reason]);
+ });
+ audit.push(['TOTAL KERUGIAN / BATAL VOID','','','',voids.reduce((a,v)=>a+Number(v.total||0),0),'']);
+
+ const blob=xlsxBlob([{name:'Rekap Struk',rows:rekap},{name:'Detail Barang Terjual',rows:detail},{name:'Audit Log Void',rows:audit}]);
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Laporan_Penjualan_${f}_sd_${t}${sh?'_Shift_'+sh:''}.xlsx`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+ toast('Laporan Excel 3 sheet berhasil dibuat. Transaksi VOID tidak dimasukkan ke Rekap/Detail.');
+}
+
+function xmlEsc(v){
+ return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+}
+function colName(n){
+ let s=''; n++;
+ while(n){let r=(n-1)%26;s=String.fromCharCode(65+r)+s;n=Math.floor((n-1)/26)}
+ return s;
+}
+function xlsxSheet(rows){
+ let maxCols=Math.max(1,...rows.map(r=>r.length));
+ let widths=[];
+ for(let c=0;c<maxCols;c++) widths[c]=Math.min(45,Math.max(10,...rows.map(r=>String(r[c]??'').length+2)));
+ let cols=widths.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('');
+ let body=rows.map((row,ri)=>{
+   const cells=row.map((v,ci)=>{
+     if(v===null||v===undefined||v==='') return '';
+     const ref=colName(ci)+(ri+1);
+     if(typeof v==='number' && Number.isFinite(v)) return `<c r="${ref}"><v>${v}</v></c>`;
+     return `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${xmlEsc(v)}</t></is></c>`;
+   }).join('');
+   return `<row r="${ri+1}">${cells}</row>`;
+ }).join('');
+ return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"/></sheetViews><cols>${cols}</cols><sheetData>${body}</sheetData></worksheet>`;
+}
+function crc32(buf){
+ let table=crc32.table;
+ if(!table){table=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);table[n]=c>>>0}crc32.table=table}
+ let c=0xFFFFFFFF;for(let i=0;i<buf.length;i++)c=table[(c^buf[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0;
+}
+function u16(n){return new Uint8Array([n&255,(n>>>8)&255])}
+function u32(n){return new Uint8Array([n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255])}
+function concatBytes(parts){
+ let len=parts.reduce((a,p)=>a+p.length,0),out=new Uint8Array(len),o=0;
+ parts.forEach(p=>{out.set(p,o);o+=p.length});return out;
+}
+function zipStore(files){
+ const enc=new TextEncoder(), locals=[], centrals=[];let offset=0;
+ files.forEach(file=>{
+   const name=enc.encode(file.name),data=enc.encode(file.data),crc=crc32(data);
+   const lh=concatBytes([new Uint8Array([80,75,3,4]),u16(20),u16(0),u16(0),u16(0),u16(0),u32(crc),u32(data.length),u32(data.length),u16(name.length),u16(0),name,data]);
+   locals.push(lh);
+   const ch=concatBytes([new Uint8Array([80,75,1,2]),u16(20),u16(20),u16(0),u16(0),u16(0),u16(0),u32(crc),u32(data.length),u32(data.length),u16(name.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(offset),name]);
+   centrals.push(ch);offset+=lh.length;
+ });
+ const central=concatBytes(centrals),local=concatBytes(locals);
+ const end=concatBytes([new Uint8Array([80,75,5,6]),u16(0),u16(0),u16(files.length),u16(files.length),u32(central.length),u32(local.length),u16(0)]);
+ return new Blob([local,central,end],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+function xlsxBlob(sheets){
+ const enc=new TextEncoder();
+ const workbook=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets.map((s,i)=>`<sheet name="${xmlEsc(s.name)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')}</sheets></workbook>`;
+ const rels=sheets.map((s,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('');
+ const content=[
+   `<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>`,
+   ...sheets.map((s,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`)
+ ].join('');
+ const files=[
+  {name:'[Content_Types].xml',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${sheets.map((s,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`},
+  {name:'_rels/.rels',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`},
+  {name:'xl/workbook.xml',data:workbook},
+  {name:'xl/_rels/workbook.xml.rels',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${rels}</Relationships>`},
+  ...sheets.map((s,i)=>({name:`xl/worksheets/sheet${i+1}.xml`,data:xlsxSheet(s.rows)}))
+ ];
+ return zipStore(files);
+}
+function sheet(title,rows){return `<h2>${title}</h2><table border="1">${rows.map((r,i)=>`<tr>${r.map(c=>`<${i?'td':'th'}>${esc(c)}</${i?'td':'th'}>`).join('')}</tr>`).join('')}</table>`}
+function start(){
+ if(state.cashier && state.sessionId){
+   document.getElementById('login').classList.add('hidden');
+   state.screen='kasir';
+   state.reportGuest=false;
+   render();
+ }else{
+   document.getElementById('app').classList.add('hidden');
+   document.getElementById('login').classList.remove('hidden');
+ }
+}
+start();
+// Auto-connect hanya aktif setelah printer pernah berhasil dipasangkan manual.
+ // Tidak membuka dialog pairing; hanya mencari perangkat yang izinnya sudah tersimpan.
+ // Tombol Connect BT tetap aktif untuk pairing/pemilihan manual kapan saja.
+setTimeout(()=>{
+  if(isAutoBTEnabled() && btState==='disconnected') autoReconnectBluetooth();
+},300);
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js', { scope: './' })
+      .then(() => console.log('PWA service worker aktif'))
+      .catch(err => console.warn('Service worker gagal:', err));
+  });
+}
+</script>
+
+
+<style id="payment-modal-visibility-fix">
+/* Payment modal: QRIS content scrolls inside the dialog and the save action stays reachable. */
+#modal.payment-modal{
+  z-index:1200!important;
+  align-items:flex-start!important;
+  justify-content:center!important;
+  overflow-y:auto!important;
+  -webkit-overflow-scrolling:touch;
+  padding:12px 12px max(16px,env(safe-area-inset-bottom))!important;
+}
+#modal.payment-modal .payment-modalbox{
+  width:min(680px,100%)!important;
+  max-height:calc(100dvh - 28px)!important;
+  max-height:calc(100vh - 28px)!important;
+  margin:auto 0!important;
+  display:flex!important;
+  flex-direction:column!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+  padding:14px!important;
+}
+#modal.payment-modal .payment-modalbox .modalhead{
+  position:sticky;
+  top:-14px;
+  z-index:4;
+  flex:none;
+  background:#fff;
+  padding:2px 0 8px;
+}
+#modal.payment-modal .payment-modalbox #qrisPreview{
+  flex:none;
+  margin:8px 0!important;
+  padding:0 0 4px;
+}
+#modal.payment-modal .payment-modalbox #qrisPreview img{
+  display:block;
+  width:auto!important;
+  max-width:min(260px,72vw)!important;
+  max-height:min(34dvh,260px)!important;
+  max-height:min(34vh,260px)!important;
+  object-fit:contain;
+  margin:0 auto;
+}
+#modal.payment-modal .payment-modalbox > .btn.primary{
+  position:sticky!important;
+  bottom:-14px;
+  z-index:5;
+  flex:none!important;
+  margin-top:8px!important;
+  padding:12px!important;
+  box-shadow:0 -5px 12px #ffffffee;
+}
+@media(max-width:600px){
+  #modal.payment-modal{padding:8px 8px max(12px,env(safe-area-inset-bottom))!important}
+  #modal.payment-modal .payment-modalbox{
+    max-height:calc(100dvh - 16px)!important;
+    max-height:calc(100vh - 16px)!important;
+    padding:12px!important;
+  }
+  #modal.payment-modal .payment-modalbox #qrisPreview img{
+    max-height:30vh!important;
+  }
+}
+</style>
+
+
+<style id="menu-editor-bottom-actions-fix">
+/* Daftar menu: place the dialog above the fixed navigation and allow the final row to scroll fully into view. */
+#modal.menu-editor-modal{
+  z-index:1300!important;
+  align-items:center!important;
+  justify-content:center!important;
+  overflow-y:auto!important;
+  -webkit-overflow-scrolling:touch;
+  padding:12px 12px 18px!important;
+}
+#modal.menu-editor-modal .menu-editor-modalbox{
+  width:min(760px,100%)!important;
+  max-height:calc(100dvh - 30px)!important;
+  max-height:calc(100vh - 30px)!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+  padding:16px 18px 24px!important;
+  margin:auto 0!important;
+}
+#modal.menu-editor-modal .modalhead{
+  position:sticky;
+  top:-16px;
+  z-index:6;
+  background:#fff;
+  padding:4px 0 10px;
+}
+#modal.menu-editor-modal #menuEditor{
+  padding-bottom:16px;
+}
+#modal.menu-editor-modal #menuEditor .scroll{
+  max-height:none!important;
+  overflow:visible!important;
+  padding-bottom:18px;
+}
+#modal.menu-editor-modal #menuEditor table{
+  width:100%;
+  border-collapse:collapse;
+}
+#modal.menu-editor-modal #menuEditor th,
+#modal.menu-editor-modal #menuEditor td{
+  vertical-align:middle;
+}
+#modal.menu-editor-modal #menuEditor td:last-child{
+  white-space:nowrap;
+  min-width:126px;
+}
+#modal.menu-editor-modal #menuEditor td:last-child .btn{
+  display:inline-block;
+  margin:2px 1px;
+}
+@media(max-width:600px){
+  #modal.menu-editor-modal{padding:8px 8px 14px!important}
+  #modal.menu-editor-modal .menu-editor-modalbox{
+    max-height:calc(100dvh - 18px)!important;
+    max-height:calc(100vh - 18px)!important;
+    padding:12px 12px 22px!important;
+  }
+  #modal.menu-editor-modal #menuEditor td:last-child{
+    min-width:116px;
+  }
+}
+</style>
+
+
+<style id="settings-save-next-to-qris">
+/* Keep Save Settings pinned above the fixed bottom navigation at all scroll positions. */
+.settings-save-inline{
+  position:fixed!important;
+  right:max(18px, calc((100vw - min(1180px, 96vw))/2 + 18px))!important;
+  bottom:82px!important;
+  z-index:45!important;
+  display:flex!important;
+  justify-content:flex-end;
+  align-items:center;
+  margin:0!important;
+  padding:8px!important;
+  background:#fff!important;
+  border:1px solid var(--line);
+  border-radius:12px;
+  box-shadow:0 4px 16px #0b2a4a20;
+}
+.settings-save-inline .btn{
+  min-width:142px;
+  white-space:nowrap;
+  padding:11px 16px;
+}
+@media(max-width:800px){
+  .settings-save-inline{
+    right:12px!important;
+    bottom:70px!important;
+  }
+}
+@media(max-height:520px){
+  .settings-save-inline{bottom:62px!important}
+}
+</style>
+\n</body></html>
