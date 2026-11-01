@@ -18,6 +18,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.poskasir.nativeapp.data.PosDatabase
 import com.poskasir.nativeapp.data.ProductEntity
 import com.poskasir.nativeapp.data.TransactionEntity
+import com.poskasir.nativeapp.bluetooth.BluetoothScanPage
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
@@ -201,11 +202,19 @@ private fun ReportPage(modifier: Modifier = Modifier) {
 
 @Composable
 private fun SettingsPage(modifier: Modifier = Modifier) {
-    Column(modifier.fillMaxSize().padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-        Text("Pengaturan",style=MaterialTheme.typography.headlineSmall)
-        listOf("Kelola menu dan harga","Upload menu Excel","Informasi usaha dan alamat","Pengaturan PPN","Pengaturan QRIS","Backup data","Restore data","Hapus semua data","Bluetooth printer").forEach {
-            OutlinedButton(onClick={},modifier=Modifier.fillMaxWidth()) { Text(it) }
+    var showBluetooth by remember { mutableStateOf(false) }
+    if (showBluetooth) {
+        BluetoothScanPage(onBack = { showBluetooth = false })
+    } else {
+        Column(modifier.fillMaxSize().padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+            Text("Pengaturan",style=MaterialTheme.typography.headlineSmall)
+            listOf("Kelola menu dan harga","Upload menu Excel","Informasi usaha dan alamat","Pengaturan PPN","Pengaturan QRIS","Backup data","Restore data","Hapus semua data").forEach {
+                OutlinedButton(onClick={},modifier=Modifier.fillMaxWidth()) { Text(it) }
+            }
+            Button(onClick={showBluetooth=true},modifier=Modifier.fillMaxWidth()) {
+                Text("Bluetooth Printer")
+            }
+            Text("Fitur pengaturan lainnya sedang dibangun bertahap.",style=MaterialTheme.typography.bodySmall)
         }
-        Text("Fitur pengaturan sedang dibangun bertahap dan belum aktif.",style=MaterialTheme.typography.bodySmall)
     }
 }
