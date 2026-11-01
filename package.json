@@ -14,7 +14,8 @@
     "@nosslabs/bluetooth-classic": "^1.2.0",
     "xlsx": "^0.18.5",
     "@capacitor/filesystem": "^7.1.4",
-    "@capacitor/app-launcher": "^7.0.1"
+    "@capacitor/app-launcher": "^7.0.1",
+    "@capacitor/share": "^7.0.1"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.4.3",
