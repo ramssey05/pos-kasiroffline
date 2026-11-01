@@ -154,7 +154,8 @@ private fun DropdownPayment(value: String, onChange: (String)->Unit) {
 
 @Composable
 private fun TransactionPage(modifier: Modifier = Modifier) {
-    val dao= remember { PosDatabase.get(LocalContext.current).posDao() }
+    val context = LocalContext.current
+    val dao = remember(context) { PosDatabase.get(context).posDao() }
     val rows by dao.observeTransactions().collectAsStateWithLifecycle(initialValue=emptyList())
     Column(modifier.fillMaxSize().padding(16.dp)) {
         Text("Riwayat Transaksi",style=MaterialTheme.typography.headlineSmall)
@@ -171,7 +172,8 @@ private fun TransactionPage(modifier: Modifier = Modifier) {
 
 @Composable
 private fun ReportPage(modifier: Modifier = Modifier) {
-    val dao= remember { PosDatabase.get(LocalContext.current).posDao() }
+    val context = LocalContext.current
+    val dao = remember(context) { PosDatabase.get(context).posDao() }
     val gross by dao.observeGrossSales().collectAsStateWithLifecycle(initialValue=0L)
     Column(modifier.fillMaxSize().padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
         Text("Laporan",style=MaterialTheme.typography.headlineSmall)
