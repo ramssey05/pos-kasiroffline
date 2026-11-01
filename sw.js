@@ -1,4 +1,4 @@
-const CACHE = 'warkop-kasir-pwa-v2';
+const CACHE = 'warkop-kasir-pwa-v3';
 const APP_SHELL = [
   './',
   './index.html',
