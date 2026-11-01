@@ -22,6 +22,9 @@ import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
 import java.util.UUID
+import java.text.SimpleDateFormat
+import org.json.JSONArray
+import org.json.JSONObject
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -125,10 +128,23 @@ private fun KasirHome(modifier: Modifier = Modifier) {
                     if(table.isBlank()) message="Nomor meja wajib diisi."
                     else if(cashier.isBlank()) message="Nama kasir wajib diisi."
                     else scope.launch {
+                        val now = System.currentTimeMillis()
+                        val date = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(java.util.Date(now))
+                        val itemArray = JSONArray().apply {
+                            cart.values.forEach { (product, qty) ->
+                                put(JSONObject().put("id", product.id).put("name", product.name)
+                                    .put("price", product.price).put("qty", qty))
+                            }
+                        }
+                        val businessDate = if (shift == 3 && java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY) < 7)
+                            SimpleDateFormat("yyyy-MM-dd", Locale.US).format(java.util.Date(now - 86400000L)) else date
                         dao.insertTransaction(TransactionEntity(
-                            transactionId=UUID.randomUUID().toString(),tableNumber=table.trim(),
-                            cashierName=cashier.trim(),shiftNumber=shift,createdAt=System.currentTimeMillis(),
-                            total=total,paymentMethod=payment
+                            transactionId=UUID.randomUUID().toString(), businessDate=businessDate,
+                            sessionId="MVP-$date-$shift", tableNumber=table.trim(),
+                            cashierName=cashier.trim(), shiftNumber=shift, createdAt=now,
+                            itemsJson=itemArray.toString(), subtotal=total, discount=0,
+                            discountType="Rp", taxPercent=0.0, taxAmount=0,
+                            total=total, paymentMethod=payment
                         ))
                         cart.clear(); table=""; message="Transaksi tersimpan."
                     }
