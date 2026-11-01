@@ -2175,15 +2175,22 @@ function saveEditedProduct(id) {
   menuManager();
 }
 function deleteProduct(id){if(confirm('Hapus menu ini?')){db.products=db.products.filter(p=>p.id!==id);save();menuManager();render()}}
-function backupData(){
+async function backupData(){
   try{
     const payload={app:'POS Kasir Warkop',backupVersion:1,exportedAt:new Date().toISOString(),data:db};
-    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json;charset=utf-8'});
+    const content=JSON.stringify(payload,null,2);
+    const filename='backup-pos-kasir-'+dateKey()+'.json';
+    if(window.PosNativeBle?.isNative?.() && window.PosNativeBle?.saveBackup){
+      const saved=await window.PosNativeBle.saveBackup(content,filename);
+      toast('Backup berhasil disimpan di Documents/POS-Kasir/'+filename);
+      return saved;
+    }
+    const blob=new Blob([content],{type:'application/json;charset=utf-8'});
     const url=URL.createObjectURL(blob),a=document.createElement('a');
-    a.href=url;a.download='backup-pos-kasir-'+dateKey()+'.json';
+    a.href=url;a.download=filename;
     document.body.appendChild(a);a.click();a.remove();
     setTimeout(()=>URL.revokeObjectURL(url),2000);
-    toast('File backup berhasil diunduh. Simpan file ini untuk restore kapan saja.');
+    toast('File backup berhasil diunduh. Periksa folder Download.');
   }catch(e){toast('Backup gagal: '+(e.message||'Terjadi kesalahan.'),'error');}
 }
 function restoreData(){
