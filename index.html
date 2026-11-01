@@ -2593,7 +2593,7 @@ async function printOwnerDailyReport() {
 
 
 
-function exportExcel(){
+async function exportExcel(){
  const f=document.getElementById('rFrom').value,t=document.getElementById('rTo').value,sh=document.getElementById('rShift').value;
 
  if(sh){
@@ -2636,8 +2636,30 @@ function exportExcel(){
  audit.push(['TOTAL KERUGIAN / BATAL VOID','','','',voids.reduce((a,v)=>a+Number(v.total||0),0),'']);
 
  const blob=xlsxBlob([{name:'Rekap Struk',rows:rekap},{name:'Detail Barang Terjual',rows:detail},{name:'Audit Log Void',rows:audit}]);
- const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Laporan_Penjualan_${f}_sd_${t}${sh?'_Shift_'+sh:''}.xlsx`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
- toast('Laporan Excel 3 sheet berhasil dibuat. Transaksi VOID tidak dimasukkan ke Rekap/Detail.');
+ const filename=`Laporan_Penjualan_${f}_sd_${t}${sh?'_Shift_'+sh:''}.xlsx`;
+ if(window.PosNativeBle?.isNative?.() && window.PosNativeBle?.saveFileBase64){
+   try{
+     const dataUrl=await new Promise((resolve,reject)=>{
+       const reader=new FileReader();
+       reader.onload=()=>resolve(String(reader.result||''));
+       reader.onerror=()=>reject(new Error('File Excel gagal dibaca untuk disimpan.'));
+       reader.readAsDataURL(blob);
+     });
+     const base64=dataUrl.split(',')[1];
+     if(!base64) throw new Error('Data Excel kosong.');
+     await window.PosNativeBle.saveFileBase64(filename,base64);
+     toast('Laporan Excel berhasil disimpan di Download/POS-Kasir.');
+     return;
+   }catch(e){
+     console.error('Gagal menyimpan laporan Excel:',e);
+     toast('Download Excel gagal: '+(e.message||'Periksa izin penyimpanan.'),'error');
+     return;
+   }
+ }
+ const url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),2000);
+ toast('Laporan Excel 3 sheet berhasil dibuat. Periksa folder Download.');
 }
 
 function xmlEsc(v){
@@ -2899,4 +2921,16 @@ if ('serviceWorker' in navigator) {
   .settings-save-inline{bottom:62px!important}
 }
 </style>
-\n</body></html>
+\n
+<style id="guest-login-button-size-fix">
+.footer-nav .navbtn:only-child{
+  flex:0 1 280px !important;
+  width:min(280px,82vw) !important;
+  min-width:0 !important;
+  height:46px !important;
+  min-height:46px !important;
+  padding:10px 16px !important;
+  align-self:center !important;
+}
+</style>
+</body></html>
