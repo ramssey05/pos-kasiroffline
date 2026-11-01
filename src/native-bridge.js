@@ -53,12 +53,8 @@ async function scanForPrinter() {
   status('mencari perangkat Bluetooth Classic…');
   try {
     // Prefer paired devices because RPP02N should already be paired in Android settings.
-    const paired = await BluetoothClassic.getPairedDevices?.();
-    let devices = paired?.devices || paired || [];
-    if (!Array.isArray(devices) || !devices.length) {
-      const result = await BluetoothClassic.scan({ duration: 10000 });
-      devices = result?.devices || [];
-    }
+    const result = await BluetoothClassic.scan({ duration: 10000 });
+    const devices = result?.devices || [];
     renderDevices(devices);
     if (!devices.length) status('printer belum ditemukan — pair dahulu di pengaturan Android');
   } finally {
