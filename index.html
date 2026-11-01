@@ -835,6 +835,7 @@ const defaults={settings:{name:'Warkop',address:'',tax:0,logo:'',qris:''},shiftS
 
 let db=load(), btState='disconnected', btDevice=null, printCharacteristic=null;
 let nativeBTConnected=false;
+window.__nativeSetBTPairing=(pairing)=>{ if(pairing)setBTState('pairing'); else if(!nativeBTConnected)setBTState('disconnected'); };
 window.__nativeSetBTConnection=(device,characteristic,connected)=>{
   nativeBTConnected=!!connected;
   if(nativeBTConnected){
