@@ -3,112 +3,85 @@ import { BluetoothClassic } from '@nosslabs/bluetooth-classic';
 
 const isNative = () => Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
 let connected = false;
-let currentDevice = null;
 let connecting = false;
 
-function status(message) {
-  const el = document.getElementById('btNativeStatus');
-  if (el) el.textContent = 'Status: ' + message;
-}
 function publish(isConnected, device = null) {
   connected = !!isConnected;
-  currentDevice = connected ? device : null;
   window.__nativeSetBTConnection?.(
-    connected ? { id: device?.address, name: device?.name || 'RPP02N' } : null,
+    connected ? { id: device?.address, address: device?.address, name: device?.name || 'Printer SPP' } : null,
     connected ? { properties: { write: true, writeWithoutResponse: false }, nativeClassic: true } : null,
     connected
   );
-  status(connected ? 'TERHUBUNG — ' + (device?.name || 'Printer Bluetooth') + ' (SPP)' : 'belum terhubung');
 }
 async function ensurePermission() {
   const result = await BluetoothClassic.checkPermissions();
   if (result?.status !== 'granted') {
     const requested = await BluetoothClassic.requestPermissions();
-    if (requested?.status !== 'granted') throw new Error('Izin Bluetooth tidak diberikan.');
+    if (requested?.status !== 'granted') throw new Error('Izin Bluetooth tidak diberikan. Aktifkan izin Nearby devices.');
   }
 }
-function renderDevices(devices) {
-  const list = document.getElementById('btDeviceResults');
-  if (!list) return;
-  if (!devices.length) {
-    list.innerHTML = '<div class="mini">Printer belum ditemukan. Pair RPP02N melalui pengaturan Bluetooth Android terlebih dahulu.</div>';
-    return;
-  }
-  list.innerHTML = devices.map((d, i) => `
-    <button type="button" class="bt-device-option" data-device-index="${i}">
-      <span><b>${String(d.name || 'Perangkat Bluetooth').replace(/[&<>"']/g, '')}</b><small>${String(d.address || '').replace(/[&<>"']/g, '')}</small></span>
-      <span class="mini">Hubungkan SPP</span>
-    </button>`).join('');
-  list.querySelectorAll('[data-device-index]').forEach(btn => btn.addEventListener('click', async () => {
-    const d = devices[Number(btn.dataset.deviceIndex)];
-    try { await connect(d); }
-    catch (e) { status('GAGAL — ' + (e?.message || String(e))); window.toast?.('Koneksi SPP gagal: ' + (e?.message || String(e))); }
-  }));
+function closePicker() { document.getElementById('nativeBtPicker')?.remove(); }
+function showPicker(devices) {
+  closePicker();
+  const wrap = document.createElement('div');
+  wrap.id = 'nativeBtPicker';
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#061827aa;display:flex;align-items:center;justify-content:center;padding:16px;font:14px system-ui';
+  const panel = document.createElement('div');
+  panel.style.cssText = 'width:min(460px,100%);max-height:85dvh;overflow:auto;background:#fff;color:#183047;border-radius:16px;padding:16px;box-shadow:0 20px 60px #0005';
+  const title = document.createElement('div');
+  title.style.cssText = 'display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:16px;margin-bottom:8px';
+  title.innerHTML = '<span>Hubungkan Printer Bluetooth</span>';
+  const close = document.createElement('button'); close.textContent = '×';
+  close.style.cssText = 'font-size:24px;background:#eef2f6;border-radius:50%;width:34px;height:34px;color:#183047';
+  close.onclick = closePicker; title.appendChild(close); panel.appendChild(title);
+  const info = document.createElement('p');
+  info.textContent = devices.length ? 'Pilih printer RPP02N yang sudah dipasangkan di pengaturan Bluetooth Android.' : 'Printer belum ditemukan. Pair printer dari Pengaturan Bluetooth Android, lalu tekan Cari Ulang.';
+  info.style.cssText = 'font-size:12px;color:#64748b;line-height:1.5'; panel.appendChild(info);
+  const list = document.createElement('div'); list.style.cssText = 'display:grid;gap:8px;margin:12px 0';
+  devices.forEach(device => {
+    const btn = document.createElement('button'); btn.type = 'button';
+    btn.style.cssText = 'display:flex;justify-content:space-between;gap:12px;align-items:center;text-align:left;padding:12px;border:1px solid #d9e5ef;border-radius:10px;background:#f8fbfd;color:#183047';
+    const name = document.createElement('span'); name.style.cssText = 'min-width:0;overflow-wrap:anywhere';
+    const strong = document.createElement('b'); strong.textContent = device.name || 'Perangkat Bluetooth';
+    const small = document.createElement('small'); small.textContent = device.address || ''; small.style.cssText = 'display:block;color:#64748b;margin-top:3px';
+    name.append(strong, small); const action = document.createElement('span'); action.textContent = 'Hubungkan'; action.style.cssText = 'white-space:nowrap;color:#0b2a4a;font-weight:600';
+    btn.append(name, action);
+    btn.onclick = async () => { try { btn.disabled = true; action.textContent = 'Menghubungkan…'; await connect(device); closePicker(); } catch (e) { btn.disabled = false; action.textContent = 'Coba lagi'; window.toast?.('Koneksi SPP gagal: ' + (e?.message || String(e)), 'error'); } };
+    list.appendChild(btn);
+  });
+  panel.appendChild(list);
+  const bottom = document.createElement('div'); bottom.style.cssText = 'display:flex;gap:8px';
+  const rescan = document.createElement('button'); rescan.textContent = 'Cari Ulang'; rescan.style.cssText = 'flex:1;padding:10px;border-radius:9px;background:#35a9e8;color:white'; rescan.onclick = () => scanForPrinter();
+  const cancel = document.createElement('button'); cancel.textContent = 'Tutup'; cancel.style.cssText = 'padding:10px 14px;border-radius:9px;background:#eef4f8;color:#0b2a4a'; cancel.onclick = closePicker;
+  bottom.append(rescan, cancel); panel.appendChild(bottom); wrap.appendChild(panel); document.body.appendChild(wrap);
 }
 async function scanForPrinter() {
   if (connecting) return;
   await ensurePermission();
-  const scanButton = document.getElementById('btScanBtn');
-  if (scanButton) { scanButton.disabled = true; scanButton.textContent = 'Memindai…'; }
-  status('mencari perangkat Bluetooth Classic…');
-  try {
-    // Prefer paired devices because RPP02N should already be paired in Android settings.
-    const result = await BluetoothClassic.scan({ duration: 10000 });
-    const devices = result?.devices || [];
-    renderDevices(devices);
-    if (!devices.length) status('printer belum ditemukan — pair dahulu di pengaturan Android');
-  } finally {
-    if (scanButton) { scanButton.disabled = false; scanButton.textContent = 'Cari Printer Ter-pair'; }
-  }
+  const result = await BluetoothClassic.scan({ duration: 10000 });
+  const devices = [...new Map((result?.devices || []).filter(d => d?.address).map(d => [d.address, d])).values()];
+  showPicker(devices);
 }
 async function connect(device) {
   if (connecting) return;
   connecting = true;
-  status('menghubungkan SPP ke ' + (device.name || device.address) + '…');
-  try {
-    await BluetoothClassic.connect({ address: device.address });
-    const check = await BluetoothClassic.isConnected?.();
-    if (check && check.isConnected === false) throw new Error('Koneksi SPP belum aktif.');
-    publish(true, device);
-    window.toast?.('Printer Bluetooth SPP terhubung: ' + (device.name || 'RPP02N'));
-  } catch (e) {
-    publish(false);
-    throw e;
-  } finally { connecting = false; }
+  try { await BluetoothClassic.connect({ address: device.address }); publish(true, device); window.toast?.('Printer Bluetooth SPP terhubung: ' + (device.name || 'Printer')); }
+  catch (e) { publish(false); throw e; }
+  finally { connecting = false; }
 }
 async function disconnect() {
-  await BluetoothClassic.disconnect();
-  publish(false);
-  window.toast?.('Bluetooth printer diputuskan.');
+  try { await BluetoothClassic.disconnect(); }
+  finally { publish(false); window.toast?.('Bluetooth printer diputuskan.'); }
 }
-async function toggleConnection() {
-  if (connected) return disconnect();
-  return scanForPrinter();
-}
+async function toggleConnection() { if (connected) return disconnect(); return scanForPrinter(); }
 async function writeBytes(input) {
   if (!connected) throw new Error('Printer Bluetooth SPP belum terhubung.');
   const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
-  // Native plugin sends a byte array over RFCOMM SPP, preserving ESC/POS control bytes.
-  for (let i = 0; i < bytes.length; i += 512) {
-    await BluetoothClassic.write({ data: Array.from(bytes.slice(i, i + 512)) });
-  }
-  const check = await BluetoothClassic.isConnected?.();
-  if (check && !check.isConnected) {
-    publish(false);
-    throw new Error('Koneksi printer terputus saat mengirim data.');
+  for (let i = 0; i < bytes.length; i += 256) {
+    await BluetoothClassic.write({ data: Array.from(bytes.slice(i, i + 256)) });
+    if (i + 256 < bytes.length) await new Promise(resolve => setTimeout(resolve, 12));
   }
   return true;
 }
-window.PosNativeBle = {
-  isNative,
-  toggleConnection,
-  autoReconnect: async () => {},
-  writeBytes,
-  disconnect,
-  scanForPrinter
-};
-if (isNative()) {
-  BluetoothClassic.addListener?.('bluetoothState', event => {
-    if (event?.value === 'off') publish(false);
-  }).catch?.(() => {});
-}
+window.PosNativeBle = { isNative, toggleConnection, writeBytes, disconnect, scanForPrinter };
+if (isNative()) BluetoothClassic.addListener?.('bluetoothState', event => { if (event?.value === 'off') publish(false); }).catch?.(() => {});
