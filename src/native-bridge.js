@@ -11,7 +11,12 @@ let connecting=false, scanning=false, supportsWNR=false, scanTimer=null;
 function escapeHtml(v) {
   return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+function setNativeStatus(message) {
+  const el=document.getElementById('btNativeStatus');
+  if(el) el.textContent='Status: '+message;
+}
 function publish(connected,name='Printer BLE') {
+  setNativeStatus(connected ? 'TERHUBUNG — '+(device?.name||name) : 'belum terhubung');
   window.__nativeSetBTConnection?.(
     connected && device ? {id:device.deviceId,name:device.name||name} : null,
     connected ? {properties:{write:true,writeWithoutResponse:supportsWNR}} : null,
@@ -40,7 +45,7 @@ function renderScanResults(items) {
     </button>`).join('');
   list.querySelectorAll('[data-device-id]').forEach(btn=>btn.addEventListener('click',()=>{
     const selected=items.find(x=>x.deviceId===btn.dataset.deviceId);
-    if(selected) connectSelected(selected).catch(e=>window.toast?.('Koneksi gagal: '+(e?.message||String(e))));
+    if(selected) connectSelected(selected).catch(e=>{ setNativeStatus('GAGAL TERHUBUNG — '+(e?.message||String(e))); window.toast?.('Koneksi gagal: '+(e?.message||String(e))); });
   }));
 }
 async function scanForPrinter() {
@@ -103,11 +108,11 @@ async function connect(id,name='Printer BLE') {
 }
 async function connectSelected(selected) {
   if(connecting) return;
-  connecting=true; put('posBtAutoReconnect','0'); window.setBTState?.('pairing');
+  connecting=true; put('posBtAutoReconnect','0'); window.setBTState?.('pairing'); setNativeStatus('menghubungkan ke '+selected.name+'…');
   await stopScan();
   try {
     await connect(selected.deviceId,selected.name||'Printer BLE');
-    window.toast?.('Printer BLE terhubung: '+(selected.name||'Printer BLE'));
+    setNativeStatus('TERHUBUNG — '+(selected.name||'Printer BLE')); window.toast?.('Printer BLE TERHUBUNG: '+(selected.name||'Printer BLE'));
   } catch(e) {
     try { await BleClient.disconnect(selected.deviceId); } catch {}
     device=null; publish(false); window.setBTState?.('disconnected');
@@ -123,7 +128,7 @@ async function disconnect() {
   const id=device?.deviceId||get('posBtDeviceId');
   try { if(id) await BleClient.disconnect(id); } catch {}
   device=null; serviceUuid=null; characteristicUuid=null; supportsWNR=false;
-  publish(false); window.setBTState?.('disconnected'); window.toast?.('Bluetooth diputuskan.');
+  publish(false); window.setBTState?.('disconnected'); setNativeStatus('diputuskan'); window.toast?.('Bluetooth diputuskan.');
 }
 async function toggleConnection() {
   if(device) return disconnect();
@@ -144,13 +149,15 @@ async function autoReconnect() {
 async function writeBytes(input) {
   if(!device||!serviceUuid||!characteristicUuid) throw new Error('Printer BLE belum terhubung.');
   const bytes=input instanceof Uint8Array?input:new Uint8Array(input);
-  for(let i=0;i<bytes.length;i+=180) {
+  // Android BLE umumnya memakai MTU default 23 byte (payload 20 byte). Chunk kecil mencegah write ditolak.
+  const chunkSize=20;
+  for(let i=0;i<bytes.length;i+=chunkSize) {
     if(!device) throw new Error('Koneksi printer terputus saat mencetak.');
-    const chunk=bytes.slice(i,i+180);
+    const chunk=bytes.slice(i,i+chunkSize);
     const view=new DataView(chunk.buffer,chunk.byteOffset,chunk.byteLength);
     if(supportsWNR) await BleClient.writeWithoutResponse(device.deviceId,serviceUuid,characteristicUuid,view);
     else await BleClient.write(device.deviceId,serviceUuid,characteristicUuid,view);
-    if(i+180<bytes.length) await new Promise(resolve=>setTimeout(resolve,15));
+    if(i+chunkSize<bytes.length) await new Promise(resolve=>setTimeout(resolve,20));
   }
   return true;
 }
