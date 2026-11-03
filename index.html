@@ -2023,12 +2023,30 @@ function menuEditorHTML() {
   `;
 }
 
-function downloadMenuTemplate(){
-  const blob=xlsxBlob([{name:'Template Menu',rows:[['Kategori','Menu','Harga'],['Kopi','Kopi Susu',14000]]}]);
-  const url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download='Template_Penambahan_Menu.xlsx';
-  document.body.appendChild(a);a.click();a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
+async function downloadMenuTemplate(){
+  try{
+    const blob=xlsxBlob([{name:'Template Menu',rows:[['Kategori','Menu','Harga'],['Kopi','Kopi Susu',14000]]}]);
+    const filename='Template_Penambahan_Menu.xlsx';
+    if(window.PosNativeBle?.isNative?.() && window.PosNativeBle?.saveFileBase64){
+      const dataUrl=await new Promise((resolve,reject)=>{
+        const reader=new FileReader();
+        reader.onload=()=>resolve(String(reader.result||''));
+        reader.onerror=()=>reject(new Error('Template gagal dibaca untuk disimpan.'));
+        reader.readAsDataURL(blob);
+      });
+      const base64=dataUrl.split(',')[1];
+      if(!base64)throw new Error('Data template kosong.');
+      await window.PosNativeBle.saveFileBase64(filename,base64);
+      toast('Template Excel berhasil disimpan di Download/POS-Kasir.');
+      return;
+    }
+    const url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),2000);
+    toast('Template Excel berhasil diunduh. Periksa folder Download.');
+  }catch(e){
+    toast('Download template gagal: '+(e.message||'Periksa penyimpanan.'),'error');
+  }
 }
 function normalizeMenuName(value){
   return String(value??'').normalize('NFKC').trim().replace(/\s+/g,' ').toLocaleLowerCase('id-ID');
@@ -2195,7 +2213,8 @@ async function backupData(){
   try{
     const payload={app:'POS Kasir Warkop',backupVersion:1,exportedAt:new Date().toISOString(),data:db};
     const content=JSON.stringify(payload,null,2);
-    const filename='backup-pos-kasir-'+dateKey()+'.json';
+    const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+    const filename='backup-pos-kasir-'+stamp+'.json';
     if(window.PosNativeBle?.isNative?.() && window.PosNativeBle?.saveBackup){
       const saved=await window.PosNativeBle.saveBackup(content,filename);
       toast('Backup berhasil disimpan di folder Download/POS-Kasir.');
