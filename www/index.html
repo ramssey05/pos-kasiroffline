@@ -1,0 +1,3277 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b2a4a">
+  <link rel="manifest" href="./manifest.webmanifest">
+<title>POS Kasir</title>
+<style>
+:root{--blue:#35a9e8;--navy:#0b2a4a;--navy2:#123e66;--white:#fff;--bg:#eef6fb;--line:#d9e5ef;--muted:#64748b;--danger:#dc2626;--ok:#16a34a;--shadow:0 8px 24px #0b2a4a14}
+*{box-sizing:border-box}html,body{margin:0;height:100%;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:#183047;font-size:13px}
+button,input,select{font:inherit}button{cursor:pointer;border:0}.hidden{display:none!important}
+.app{height:100dvh;display:flex;flex-direction:column}.topbar{height:64px;flex:none;background:linear-gradient(90deg,var(--navy),#164d78);color:white;display:flex;align-items:center;justify-content:space-between;padding:0 18px;gap:12px}.brand{font-size:18px;font-weight:800;white-space:nowrap}.status{display:flex;gap:14px;align-items:center;font-size:13px}.pill{background:#ffffff1c;border:1px solid #ffffff33;padding:7px 10px;border-radius:10px}
+.main{min-height:0;flex:1;display:grid;grid-template-columns:minmax(0,1.65fr) minmax(310px,.85fr);gap:12px;padding:12px}.panel{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);min-height:0}.menu-panel{display:flex;flex-direction:column;overflow:hidden}.toolbar{padding:12px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;flex-wrap:wrap}.search{flex:1;min-width:170px}.input,.select{border:1px solid #cbd9e5;border-radius:10px;padding:10px 12px;background:white;outline:none;width:100%}.input:focus{border-color:var(--blue);box-shadow:0 0 0 3px #35a9e820}.cats{display:flex;gap:7px;overflow:auto;padding:8px 12px 10px}.cat{padding:8px 11px;border-radius:999px;background:#eef5fa;color:#31506a;white-space:nowrap}.cat.active{background:var(--navy);color:#fff}.products{padding:12px;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:10px}.product{border:1px solid var(--line);border-radius:13px;overflow:hidden;background:#fff;text-align:left;transition:.15s}.product:hover{transform:translateY(-1px);box-shadow:var(--shadow)}.pic{height:92px;background:linear-gradient(135deg,#e7f5fd,#cfe9f7);display:flex;align-items:center;justify-content:center;font-size:42px;overflow:hidden}.pic img{width:100%;height:100%;object-fit:cover}.pinfo{padding:9px}.pname{font-weight:750;font-size:13px;line-height:1.25}.price{color:var(--navy);font-weight:800;margin-top:5px;font-size:13px}
+.cart{display:flex;flex-direction:column;overflow:hidden}.carthead{padding:13px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}.cartitems{flex:1;overflow:auto;padding:10px}.cartrow{border-bottom:1px solid #edf2f6;padding:9px 0}.rowtop{display:flex;justify-content:space-between;gap:8px}.qty{display:flex;align-items:center;gap:6px;margin-top:7px}.qty button{width:28px;height:28px;border-radius:8px;background:#eaf4fa;color:var(--navy);font-weight:800}.mini{font-size:12px;color:var(--muted)}.summary{padding:12px;border-top:1px solid var(--line);background:#fbfdff}.sumline{display:flex;justify-content:space-between;margin:6px 0}.total{font-size:16px;font-weight:900;color:var(--navy)}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.btn{padding:9px 11px;font-size:13px;border-radius:10px;font-weight:750}.primary{background:var(--blue);color:white}.navy{background:var(--navy);color:white}.light{background:#eaf4fa;color:var(--navy)}.danger{background:#fee2e2;color:#991b1b}.footer-nav{height:72px;flex:none;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:center;gap:8px;padding:9px}.navbtn{min-width:120px;font-size:13px;border-radius:11px;background:#eef5fa;color:var(--navy);font-weight:750}.navbtn.active{background:var(--navy);color:#fff}
+.modal{position:fixed;inset:0;background:#06182799;display:flex;align-items:center;justify-content:center;padding:15px;z-index:20}.modalbox{width:min(680px,100%);max-height:92dvh;overflow:auto;background:#fff;border-radius:17px;padding:18px;box-shadow:0 20px 70px #0004}.modalhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.close{background:#eef2f6;border-radius:99px;width:34px;height:34px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{margin-bottom:10px}.field label{display:block;font-size:12px;font-weight:750;margin-bottom:5px}.login{position:fixed;inset:0;background:linear-gradient(145deg,var(--navy),#1c78a9);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}.loginbox{width:min(430px,100%);background:#fff;border-radius:20px;padding:22px;box-shadow:0 25px 80px #0005}
+.login-settings-btn{position:absolute;top:12px;right:12px;width:40px;height:40px;border:0;border-radius:12px;background:#eef4f8;color:var(--navy);font-size:21px;cursor:pointer;display:grid;place-items:center}
+.login-settings-btn:active{transform:scale(.96)}.loginlogo{text-align:center;font-size:44px}.toast{position:fixed;right:15px;bottom:88px;background:var(--navy);color:#fff;padding:12px 15px;border-radius:11px;z-index:80;box-shadow:var(--shadow)}
+.toast{display:flex;align-items:center;gap:11px;min-width:250px;max-width:min(390px,calc(100vw - 30px));padding:13px 16px;border:1px solid #dbe7ef;background:#fff;color:#183047;border-radius:14px;box-shadow:0 12px 36px #0b2a4a26;animation:toastIn .22s ease-out}
+/* Notifikasi selalu berada di lapisan teratas, termasuk di atas modal dan overlay. */
+#toast.toast{
+  position:fixed !important;
+  z-index:2147483647 !important;
+  right:15px !important;
+  bottom:88px !important;
+  pointer-events:none;
+}
+
+.toast .toast-mark{width:32px;height:32px;display:grid;place-items:center;flex:none;border-radius:50%;background:#dcfce7;color:#15803d;font-size:17px}
+.toast.toast-error .toast-mark{background:#fee2e2;color:#b91c1c}
+.toast.toast-info .toast-mark{background:#e0f2fe;color:#0369a1}
+.toast .toast-copy{min-width:0}
+.toast .toast-title{font-size:12px;font-weight:600;color:#102a43;margin-bottom:2px}
+.toast .toast-message{font-size:11px;color:#64748b;line-height:1.4;overflow-wrap:anywhere}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+table{width:100%;border-collapse:collapse;font-size:12px}th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.scroll{overflow:auto}.empty{text-align:center;color:var(--muted);padding:35px 10px}.settingmenu{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}.settingtab{padding:9px 12px;background:#edf5fa;border-radius:9px}.settingtab.active{background:var(--navy);color:#fff}.notice{padding:10px;background:#eef7ff;border-left:4px solid var(--blue);border-radius:8px;font-size:12px;margin-bottom:12px}
+@media(max-width:800px){.report-window,.settings-window{width:98%;max-height:calc(100dvh - 145px);margin:0 auto}.report-toolbar .input,.report-toolbar .select{max-width:none!important;flex:1;min-width:115px}.main{grid-template-columns:1fr}.cart{min-height:42dvh}.products{grid-template-columns:repeat(auto-fill,minmax(125px,1fr))}.topbar{height:58px;padding:0 10px}.brand{font-size:16px}.status{font-size:11px;gap:6px}.status .pill:first-child{display:none}.footer-nav{height:62px}.navbtn{min-width:0;flex:1;font-size:12px}.grid2{grid-template-columns:1fr}}
+@media(min-width:801px) and (max-width:1100px){.main{grid-template-columns:minmax(0,1.35fr) minmax(290px,.8fr)}}
+@media(orientation:landscape) and (max-height:600px){.topbar{height:52px}.main{padding:8px;gap:8px}.footer-nav{height:58px}.products{padding:8px;grid-template-columns:repeat(auto-fill,minmax(125px,1fr))}.pic{height:82px}}
+@media(max-width:800px) and (orientation:landscape){.main{grid-template-columns:minmax(0,1.18fr) minmax(250px,.82fr);gap:8px;padding:8px}.cart{min-height:0;height:100%}.products{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:7px;padding:8px}.pic{height:72px}.pinfo{padding:7px}.pname,.price{font-size:11px}.toolbar{padding:8px}.cats{padding:0 8px 7px}.footer-nav{height:54px;padding:6px}.navbtn{font-size:11px}.topbar{height:50px}}
+@media(max-width:420px) and (orientation:portrait){.main{padding:7px;gap:7px}.products{grid-template-columns:repeat(2,minmax(0,1fr));padding:8px;gap:7px}.pic{height:82px}.toolbar{padding:8px}.cats{padding-left:8px;padding-right:8px}.topbar{padding:0 8px}.status{gap:4px}}
+/* Receipt preview / 58mm thermal paper */
+#receiptPreviewBackdrop{z-index:1100;background:#071827cc;overflow:auto;padding:18px 10px}.receipt-preview{display:grid!important;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto auto auto!important;align-items:stretch!important;width:min(430px,96vw);max-height:calc(100dvh - 30px);overflow:auto;background:#f3f6f8;border-radius:16px;padding:12px;box-shadow:0 20px 70px #0006}.receipt-preview>.modalhead{grid-column:1!important;grid-row:1!important}.receipt-preview>.receipt-print-area{grid-column:1!important;grid-row:2!important;width:100%!important}.receipt-preview>.receipt-actions{grid-column:1!important;grid-row:3!important;width:100%!important}.receipt-print-area{display:flex;justify-content:center;padding:10px 0 12px;overflow-y:auto;min-height:0;flex:none!important}.receipt-print-paper{width:58mm;min-width:58mm;background:#fff;color:#111;box-shadow:0 2px 12px #0002}.receipt-paper{width:58mm;padding:4mm 3.5mm 5mm;font-family:"Courier New",monospace;font-size:10px;line-height:1.35;word-break:break-word}.r-header{text-align:center}.r-logo{display:block;max-width:20mm;max-height:15mm;object-fit:contain;margin:0 auto 2mm}.r-store{font-size:18px;font-weight:700;letter-spacing:.4px;line-height:1.15}.r-address{font-size:8.5px;line-height:1.3;margin-top:1.5mm}.r-flags{display:flex;justify-content:center;gap:3mm;margin-top:2.5mm}.r-flags span{border:1px solid #111;padding:1mm 2mm;font-size:8px;font-weight:700;letter-spacing:.5px}.r-divider{border-top:1px dashed #222;margin:3mm 0}.r-meta>div{display:flex;justify-content:flex-start;gap:0;align-items:flex-start;margin:1.2mm 0}.r-meta span{width:18mm;min-width:18mm;flex:none}.r-meta i{width:3mm;min-width:3mm;font-style:normal;text-align:center}.r-meta b{flex:1;font-weight:400;text-align:left;max-width:none;word-break:break-word}.r-summary>div{display:flex;justify-content:space-between;gap:4mm;align-items:flex-start;margin:1.2mm 0}.r-summary span{flex:1;min-width:0}.r-summary b{font-weight:400;text-align:right;max-width:65%;word-break:break-word}.r-items{margin-top:1mm}.r-item{margin:1.8mm 0}.r-item-name{font-weight:700;line-height:1.25}.r-item-detail{display:flex;justify-content:space-between;gap:3mm;margin-top:.5mm}.r-total{align-items:center!important;margin-top:2mm!important}.r-total span{font-weight:700}.r-total strong{font-size:13px;font-weight:700}.r-footer{text-align:center;margin-top:2mm}.r-footer>div{font-weight:700;font-size:11px}.r-footer small{display:block;font-size:8px;margin-top:1mm}.receipt-actions{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:center!important;gap:8px!important;width:100%!important;flex:0 0 auto!important;box-sizing:border-box!important;margin:10px 0 0!important;order:3!important;position:relative!important}.receipt-actions .btn{flex:1 1 0!important;max-width:180px!important}.receipt-no-print{}
+/* Owner report preview uses the same thermal-paper preview container as receipts. */
+.owner-report-paper{width:58mm;min-width:58mm;padding:4mm 3.5mm 5mm;box-sizing:border-box;background:#fff;color:#111;font-family:"Courier New",monospace;font-size:10px;line-height:1.35;word-break:break-word}
+.owner-preview-header{text-align:center}
+.owner-preview-logo{display:block;max-width:20mm;max-height:15mm;object-fit:contain;margin:0 auto 2mm}
+.owner-preview-store{font-size:20px;font-weight:800;letter-spacing:.5px;line-height:1.15}
+.owner-preview-heading{font-size:11px;font-weight:700;line-height:1.2;margin-top:1.5mm}
+.owner-preview-divider{border-top:1px dashed #222;margin:3mm 0}
+.owner-preview-meta{margin:1.5mm 0;line-height:1.45}
+.owner-preview-row{display:flex;justify-content:space-between;gap:3mm;align-items:flex-start;margin:1.3mm 0}
+.owner-preview-row span{flex:1;min-width:0}
+.owner-preview-row b{font-weight:400;text-align:right;white-space:nowrap}
+.owner-preview-section{font-weight:700;margin:2mm 0 1.5mm}
+.owner-preview-total{font-weight:700}
+.owner-preview-total b{font-weight:700}
+.owner-preview-footer{text-align:center;margin-top:4mm;font-size:8px}
+
+/* Owner daily report print - thermal summary */
+.owner-report-print{display:none}
+@media print{
+  body.owner-report-printing *{visibility:hidden!important}
+  body.owner-report-printing #ownerDailyPrint,
+  body.owner-report-printing #ownerDailyPrint *{visibility:visible!important}
+  body.owner-report-printing #ownerDailyPrint{
+    display:block!important;
+    position:absolute!important;
+    left:0!important;
+    top:0!important;
+    width:58mm!important;
+    min-width:58mm!important;
+    max-width:58mm!important;
+    background:#fff!important;
+    color:#111!important;
+    padding:3mm!important;
+    box-sizing:border-box!important;
+    font-family:"Courier New",monospace!important;
+    font-size:10px!important;
+    line-height:1.35!important;
+    white-space:normal!important;
+  }
+  body.owner-report-printing #ownerDailyPrint .owner-print-title{text-align:center;margin-bottom:3mm}
+  body.owner-report-printing #ownerDailyPrint .owner-print-title .owner-store{font-size:13px;font-weight:700}
+  body.owner-report-printing #ownerDailyPrint .owner-print-title .owner-heading{font-size:11px;font-weight:700;margin-top:1mm}
+  body.owner-report-printing #ownerDailyPrint .owner-print-meta{text-align:left;margin:3mm 0}
+  body.owner-report-printing #ownerDailyPrint .owner-line{border-top:1px dashed #111;margin:2.5mm 0}
+  body.owner-report-printing #ownerDailyPrint .owner-row{display:flex;justify-content:space-between;gap:2mm;margin:1.1mm 0}
+  body.owner-report-printing #ownerDailyPrint .owner-label{white-space:nowrap}
+  body.owner-report-printing #ownerDailyPrint .owner-value{text-align:right;white-space:nowrap}
+  body.owner-report-printing #ownerDailyPrint .owner-section{font-weight:700;margin:2mm 0 1.5mm}
+  body.owner-report-printing #ownerDailyPrint .owner-total{font-weight:700}
+  body.owner-report-printing #ownerDailyPrint .owner-print-footer{text-align:center;margin-top:4mm;font-size:8px}
+}
+
+@media print{
+  body.owner-report-printing *{visibility:hidden!important}
+  body.owner-report-printing #ownerDailyPrint,
+  body.owner-report-printing #ownerDailyPrint *{visibility:visible!important}
+  body.owner-report-printing #ownerDailyPrint{
+    display:block!important;
+    position:absolute!important;
+    left:0!important;
+    top:0!important;
+    width:100%!important;
+    background:#fff!important;
+    color:#111!important;
+    padding:18px!important;
+    box-sizing:border-box!important;
+  }
+  body.owner-report-printing #ownerDailyPrint .owner-print-title{text-align:center;margin-bottom:14px}
+  body.owner-report-printing #ownerDailyPrint h2{margin:0 0 4px;font-size:18px}
+  body.owner-report-printing #ownerDailyPrint .owner-print-meta{font-size:11px;color:#333;margin-bottom:14px;text-align:center}
+  body.owner-report-printing #ownerDailyPrint table{width:100%;border-collapse:collapse;font-size:10px}
+  body.owner-report-printing #ownerDailyPrint th,
+  body.owner-report-printing #ownerDailyPrint td{border:1px solid #333;padding:6px 5px;vertical-align:top}
+  body.owner-report-printing #ownerDailyPrint th{font-weight:700;text-align:left}
+  body.owner-report-printing #ownerDailyPrint .owner-print-no{text-align:center;width:28px}
+  body.owner-report-printing #ownerDailyPrint .owner-print-total{text-align:right;white-space:nowrap}
+  body.owner-report-printing #ownerDailyPrint .owner-print-footer{margin-top:18px;font-size:10px;text-align:right}
+}
+@media print{
+  @page{size:58mm auto;margin:0}
+  html,body{width:58mm!important;margin:0!important;padding:0!important;background:#fff!important}
+  body *{visibility:hidden!important}
+  #receiptPreviewBackdrop,#receiptPreviewBackdrop *{visibility:visible!important}
+  #receiptPreviewBackdrop{position:absolute!important;inset:0!important;width:58mm!important;padding:0!important;background:#fff!important;display:block!important}
+  .receipt-preview{width:58mm!important;max-height:none!important;overflow:visible!important;padding:0!important;background:#fff!important;box-shadow:none!important}
+  .receipt-print-area{width:58mm!important;padding:0!important;display:block!important}
+  .receipt-print-paper,.receipt-paper{width:58mm!important;min-width:58mm!important;box-shadow:none!important}
+  .receipt-no-print{display:none!important}
+}
+@media(max-width:420px){.receipt-preview{width:calc(100vw - 16px);padding:8px}.receipt-paper{font-size:9.5px}}
+.navbtn.bt-connected{background:#dcfce7;color:#15803d;border:1px solid #86efac}.bt-spin{display:inline-block;animation:btspin .9s linear infinite}@keyframes btspin{to{transform:rotate(360deg)}}.report-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0 10px;border-bottom:1px solid var(--line)}
+.report-tab{padding:10px 12px;border:1px solid var(--line);border-bottom:0;border-radius:10px 10px 0 0;background:#eef5fa;color:var(--navy);font-size:12px;font-weight:400}
+.report-tab.active{background:var(--navy);color:#fff}
+.tab-count{display:inline-flex;min-width:20px;height:20px;align-items:center;justify-content:center;margin-left:4px;border-radius:999px;background:#dbeafe;color:var(--navy);font-size:10px}
+.report-tab.active .tab-count{background:#fff;color:var(--navy)}
+.void-badge{display:inline-block;margin-left:4px;padding:2px 5px;border-radius:5px;background:#fee2e2;color:#b91c1c;font-size:9px}
+.report-shell,.settings-shell{grid-column:1/-1;display:flex;align-items:flex-start;justify-content:center;overflow:auto;background:transparent;border:0;box-shadow:none;padding:14px 0 18px;min-height:0}.report-window,.settings-window{width:min(1180px,96%);max-height:calc(100dvh - 175px);overflow:auto;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);margin:0 auto}.report-titlebar{position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;min-height:54px;padding:12px 14px;background:#fff;border-bottom:1px solid var(--line);box-sizing:border-box}.report-toolbar{position:sticky;top:53px;z-index:3;background:#fbfdff}
+.ordertype{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:9px 12px 0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#eef5fa}
+.ordertype button{height:34px;border:0;background:transparent;color:var(--navy);font-size:12px;font-weight:700;cursor:pointer}
+.ordertype button.active{background:var(--navy);color:#fff}
+.bill-banner{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:8px 12px 0;padding:7px 10px;border-radius:10px;background:#fef3c7;border:1px solid #f59e0b;color:#92400e;font-size:12px}
+.bill-banner button{border:0;border-radius:8px;padding:4px 9px;background:#fff;color:#92400e;font-size:11px;font-weight:700;cursor:pointer;border:1px solid #f59e0b}
+.otype-badge{display:inline-block;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:700;vertical-align:middle}
+.otype-badge.di{background:#e0f2fe;color:#075985}.otype-badge.ta{background:#ede9fe;color:#5b21b6}
+.unpaid-badge{display:inline-block;margin-left:2px;padding:2px 6px;border-radius:5px;background:#fef3c7;color:#92400e;font-size:9px;font-weight:700;vertical-align:middle}
+.unpaid-notice{background:#fffbeb!important;border-color:#f59e0b!important;color:#92400e}
+.bill-row{align-items:flex-start;gap:8px;flex-wrap:wrap}.bill-actions{display:flex;gap:6px;flex-wrap:wrap}
+.cart-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 12px 9px;border-bottom:1px solid var(--line)}
+.pending-main,.pending-list-btn{height:36px;border-radius:12px;font-size:12px;font-weight:800}
+.pending-main{background:#f59e0b;color:#fff}.pending-list-btn{background:#eef8ff;color:var(--navy);border:1px solid #b8ddf4}
+.cart-table{display:flex;flex-direction:column;min-height:0;flex:1}
+.cartcols,.cartrow{display:grid;grid-template-columns:24px minmax(90px,1fr) 72px 88px 78px 18px;align-items:center;column-gap:7px}
+.cartcols{padding:10px 12px 7px;color:#50677e;font-size:11px;border-bottom:1px solid var(--line)}
+.cartitems{overflow:auto;padding:0 12px}.cartrow{min-height:68px;padding:7px 0;border-bottom:1px solid #edf2f6;font-size:11px}.cart-name{min-width:0;overflow:visible;text-overflow:clip;white-space:normal;line-height:1.35;align-self:center}.cart-name .strong{display:block;white-space:normal;overflow-wrap:anywhere}.cart-name .btn{display:inline-block;white-space:nowrap;line-height:1.2;min-height:22px}.cart-price{color:#60778e}.cart-total{font-size:11px;text-align:right}.cart-no{color:#7890a5}.qty{display:flex;align-items:center;gap:5px;justify-content:center}.qty button{width:22px;height:22px;border-radius:6px;background:#eef4f8;color:var(--navy);font-size:12px;font-weight:800;padding:0}.qty span{min-width:14px;text-align:center}.remove-cart{background:transparent;color:#ef3340;font-size:18px;line-height:1;padding:0}.cart-empty{padding:35px 8px;font-size:12px}.summary{padding:10px 12px 12px;border-top:1px solid var(--line);background:#fff}.sumline{font-size:11px;margin:6px 0}.discount-box{border:1px solid #ffd66b;background:#fffaf0;border-radius:12px;padding:7px 8px;margin:7px 0}.discount-title{font-size:11px;display:flex;justify-content:space-between;margin-bottom:5px}.discount-title b{color:#ef4444}.discount-inputs{display:grid;grid-template-columns:53px 1fr;gap:5px}.discount-inputs .input,.discount-inputs .select{padding:6px 8px;font-size:11px;height:30px}.cart-grand-total{display:flex;justify-content:space-between;align-items:center;background:#0f172a;color:#fff;border-radius:10px;padding:9px 11px;margin-top:6px;box-shadow:0 4px 10px #0b2a4a22}.cart-grand-total span{font-size:10px;font-weight:500;letter-spacing:.5px}.cart-grand-total b{font-size:17px;color:#29b6f6}.pay-big{width:100%;margin-top:6px;height:42px;border-radius:10px;background:#059f6b;color:#fff;font-size:14px;font-weight:500}.pay-big:disabled{opacity:.45;cursor:not-allowed}.pending-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+@media(max-width:800px){.cartcols,.cartrow{grid-template-columns:20px minmax(75px,1fr) 62px 78px 70px 16px}.cartcols{font-size:10px}.cartrow{font-size:10px;min-height:66px}.cart-grand-total b{font-size:16px}}
+
+body,button,input,select{font-weight:400}
+h1,h2,h3,h4,h5,h6,b,strong{font-weight:500}
+.brand{font-weight:600}
+.pname{font-weight:500}
+.price{font-weight:500}
+.btn,.navbtn,.pending-main,.pending-list-btn{font-weight:500}
+.qty button{font-weight:500}
+.total,.cart-grand-total span,.cart-grand-total b{font-weight:500}
+.field label{font-weight:500}
+
+.payment-notice-backdrop{position:fixed;inset:0;background:#0b2a4a55;z-index:1000;display:flex;align-items:center;justify-content:center;padding:15px}
+.payment-notice{width:min(390px,calc(100vw - 30px));padding:18px;background:#fff;border:1px solid #dbe7ef;border-radius:16px;box-shadow:0 18px 60px #0b2a4a2b}
+.payment-notice-row{display:flex;align-items:center;gap:12px}.payment-notice-actions{display:flex;justify-content:flex-end;margin-top:14px}.payment-notice-actions button{min-width:82px}
+.payment-icon{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:20px;font-weight:500;flex:none}
+.payment-icon.success{background:#dcfce7;color:#15803d}.payment-icon.info{background:#e0f2fe;color:#0369a1}
+.payment-title{font-size:14px;font-weight:500;color:#102a43}.payment-message{font-size:12px;color:#64748b;margin-top:3px}
+</style>
+
+<style id="mobile-responsive-fix-v2">
+/* ===== Mobile responsive v2 =====
+   Mobile uses normal document scrolling instead of locking the whole app to the viewport.
+   This prevents iPhone landscape from becoming unscrollable and keeps product text visible.
+*/
+html, body {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
+  height: auto !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: auto;
+}
+
+body {
+  padding: 0;
+}
+
+.app {
+  height: auto !important;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 800px) {
+  .app {
+    min-height: 100dvh;
+    height: auto !important;
+  }
+
+  .topbar {
+    flex: 0 0 auto;
+    min-height: 58px;
+    height: auto;
+    padding-top: max(8px, env(safe-area-inset-top));
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
+    padding-bottom: 8px;
+  }
+
+  .main {
+    flex: none !important;
+    min-height: 0 !important;
+    height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px;
+    padding:
+      8px
+      max(8px, env(safe-area-inset-right))
+      8px
+      max(8px, env(safe-area-inset-left));
+    overflow: visible !important;
+  }
+
+  .menu-panel,
+  .cart {
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .toolbar {
+    flex: none;
+  }
+
+  .cats {
+    flex: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .cats::-webkit-scrollbar {
+    display: none;
+  }
+
+  .products {
+    flex: none !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    align-content: start;
+  }
+
+  .product {
+    min-width: 0;
+    height: auto !important;
+  }
+
+  .pic {
+    height: 82px;
+  }
+
+  .pinfo {
+    display: block !important;
+    min-height: 58px;
+  }
+
+  .cart {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .cartitems {
+    flex: none !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .summary {
+    flex: none !important;
+  }
+
+  .footer-nav {
+    position: static !important;
+    flex: 0 0 auto !important;
+    height: auto !important;
+    min-height: 62px;
+    padding:
+      7px
+      max(8px, env(safe-area-inset-right))
+      max(7px, env(safe-area-inset-bottom))
+      max(8px, env(safe-area-inset-left));
+  }
+
+  .navbtn {
+    min-width: 0 !important;
+    flex: 1 1 0 !important;
+  }
+}
+
+/* iPhone landscape: deliberately use one long page so Safari can scroll vertically. */
+@media (max-width: 900px) and (orientation: landscape) {
+  html, body {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .topbar {
+    min-height: 50px;
+    padding-top: max(4px, env(safe-area-inset-top));
+    padding-bottom: 4px;
+  }
+
+  .main {
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    padding: 8px max(8px, env(safe-area-inset-right)) 8px max(8px, env(safe-area-inset-left));
+  }
+
+  .menu-panel,
+  .cart {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  .products {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .pic {
+    height: 76px !important;
+  }
+
+  .pinfo {
+    min-height: 48px;
+    padding: 7px;
+  }
+
+  .pname,
+  .price {
+    font-size: 11px;
+  }
+
+  .cartitems {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .footer-nav {
+    min-height: 54px;
+  }
+}
+
+/* Narrow portrait phones */
+@media (max-width: 420px) and (orientation: portrait) {
+  .products {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .pic {
+    height: 78px !important;
+  }
+
+  .pinfo {
+    min-height: 56px;
+    padding: 7px;
+  }
+
+  .pname,
+  .price {
+    font-size: 12px;
+  }
+}
+
+/* Make horizontal data sections scroll instead of stretching the page. */
+.cartcols,
+.cartrow {
+  min-width: 0;
+}
+
+.report-window,
+.settings-window,
+.modal {
+  max-width: calc(100vw - 16px);
+}
+</style>
+
+
+<style id="tablet-desktop-layout-fix">
+/* ===== Tablet: keep the desktop two-panel layout =====
+   Phones only use the stacked mobile layout. Tablets keep menu + cart side by side.
+*/
+@media (min-width: 601px) and (max-width: 900px) {
+  html, body {
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .app {
+    height: 100dvh !important;
+    min-height: 0 !important;
+  }
+
+  .topbar {
+    height: 64px !important;
+    min-height: 64px !important;
+    padding: 0 18px !important;
+  }
+
+  .brand { font-size: 18px !important; }
+  .status { font-size: 13px !important; gap: 14px !important; }
+  .status .pill:first-child { display: block !important; }
+
+  .main {
+    flex: 1 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.65fr) minmax(310px, .85fr) !important;
+    gap: 12px !important;
+    padding: 12px !important;
+    overflow: hidden !important;
+  }
+
+  .menu-panel {
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: hidden !important;
+  }
+
+  .toolbar { padding: 12px !important; }
+  .cats { padding: 8 12px 10px !important; }
+
+  .products {
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)) !important;
+    gap: 10px !important;
+    padding: 12px !important;
+  }
+
+  .product { height: auto !important; }
+  .pic { height: 92px !important; }
+  .pinfo { padding: 9px !important; min-height: 0 !important; }
+  .pname, .price { font-size: 13px !important; }
+
+  .cart {
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: hidden !important;
+  }
+
+  .cartitems {
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  .footer-nav {
+    position: static !important;
+    height: 72px !important;
+    min-height: 72px !important;
+    padding: 9px !important;
+  }
+
+  .navbtn {
+    min-width: 120px !important;
+    flex: 0 1 260px !important;
+    font-size: 13px !important;
+  }
+
+  .grid2 { grid-template-columns: 1fr 1fr !important; }
+
+  .report-window, .settings-window {
+    width: min(680px, calc(100vw - 30px)) !important;
+    max-height: 92dvh !important;
+    margin: 0 auto !important;
+  }
+}
+</style>
+
+
+<style id="iphone-landscape-override-v4">
+/* iPhone landscape must override the tablet desktop rule. */
+@media (max-width: 900px) and (orientation: landscape) {
+  html, body { width:100% !important; max-width:100% !important; height:auto !important; min-height:100% !important; overflow-x:hidden !important; overflow-y:auto !important; -webkit-overflow-scrolling:touch; }
+  .app { height:auto !important; min-height:100dvh !important; display:flex !important; flex-direction:column !important; }
+  .topbar { flex:0 0 auto !important; height:auto !important; min-height:50px !important; padding-top:max(4px,env(safe-area-inset-top)) !important; padding-bottom:4px !important; }
+  .main { flex:none !important; display:flex !important; flex-direction:column !important; grid-template-columns:none !important; width:100% !important; height:auto !important; min-height:0 !important; overflow:visible !important; padding:8px max(8px,env(safe-area-inset-right)) 8px max(8px,env(safe-area-inset-left)) !important; }
+  .menu-panel, .cart { width:100% !important; height:auto !important; min-height:0 !important; overflow:visible !important; }
+  .products { height:auto !important; max-height:none !important; min-height:0 !important; overflow:visible !important; grid-template-columns:repeat(3,minmax(0,1fr)) !important; gap:8px !important; padding:8px !important; }
+  .product { height:auto !important; min-width:0 !important; }
+  .pic { height:76px !important; }
+  .pinfo { display:block !important; min-height:48px !important; padding:7px !important; }
+  .pname, .price { font-size:11px !important; }
+  .cart { display:flex !important; flex-direction:column !important; }
+  .cartitems { height:auto !important; max-height:none !important; min-height:0 !important; overflow:visible !important; }
+  .summary { flex:none !important; }
+  .footer-nav { position:static !important; flex:0 0 auto !important; height:auto !important; min-height:54px !important; padding:7px max(8px,env(safe-area-inset-right)) max(7px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left)) !important; }
+  .navbtn { min-width:0 !important; flex:1 1 0 !important; font-size:12px !important; }
+}
+</style>
+
+<style id="ipad-mini-landscape-cart-fix-v5">
+/* iPad mini landscape: keep desktop layout, but make the cart columns compact enough
+   that the delete (X) column is always visible. */
+@media (min-width: 901px) and (max-width: 1100px) and (orientation: landscape) {
+  .main {
+    grid-template-columns: minmax(0, 1.7fr) minmax(360px, .9fr) !important;
+    gap: 10px !important;
+    padding: 10px !important;
+  }
+
+  .cart {
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .cart-tabs {
+    gap: 5px !important;
+    padding: 8px !important;
+  }
+
+  .pending-main, .pending-list-btn {
+    min-width: 0 !important;
+    font-size: 10px !important;
+    padding: 0 6px !important;
+  }
+
+  .cartcols, .cartrow {
+    grid-template-columns: 18px minmax(50px, 1fr) 58px 70px 62px 24px !important;
+    column-gap: 4px !important;
+  }
+
+  .cartcols {
+    padding: 7px 8px 5px !important;
+    font-size: 9px !important;
+  }
+
+  .cartitems {
+    padding: 0 8px !important;
+    min-width: 0 !important;
+  }
+
+  .cartrow {
+    min-height: 46px !important;
+    font-size: 9px !important;
+  }
+
+  .cart-price, .cart-total {
+    font-size: 9px !important;
+    white-space: nowrap !important;
+  }
+
+  .qty {
+    gap: 2px !important;
+  }
+
+  .qty button {
+    width: 19px !important;
+    height: 19px !important;
+    font-size: 10px !important;
+  }
+
+  .remove-cart {
+    width: 24px !important;
+    min-width: 24px !important;
+    height: 28px !important;
+    display: grid !important;
+    place-items: center !important;
+    font-size: 20px !important;
+  }
+
+  .summary {
+    padding: 7px 8px 8px !important;
+  }
+
+  .sumline {
+    font-size: 9px !important;
+    margin: 4px 0 !important;
+  }
+
+  .discount-box {
+    padding: 5px 6px !important;
+    margin: 5px 0 !important;
+  }
+
+  .cart-grand-total {
+    padding: 7px 9px !important;
+    margin-top: 4px !important;
+  }
+
+  .cart-grand-total b {
+    font-size: 14px !important;
+  }
+
+  .pay-big {
+    height: 36px !important;
+    font-size: 12px !important;
+  }
+}
+</style>
+
+<style id="desktop-independent-menu-cart-scroll">
+/* Desktop: menu and transaction panels stay in the viewport.
+   Menu cards scroll independently; transaction rows scroll inside the cart. */
+@media (min-width: 901px) {
+  html, body {
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+  #app.app {
+    height: 100dvh !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+  #app .main {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: hidden !important;
+    grid-template-columns: minmax(0, 1.65fr) minmax(310px, .85fr) !important;
+  }
+  #app .menu-panel,
+  #app .cart {
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+  #app .menu-panel {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  #app .products {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    height: 0 !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    align-content: start;
+  }
+  #app .cart {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  #app .cart-table {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+  #app .cartitems {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+  #app .summary {
+    flex: 0 0 auto !important;
+  }
+  #app .footer-nav {
+    flex: 0 0 72px !important;
+  }
+}
+</style>
+
+
+<style id="restore-product-name-price-display">
+@media (min-width: 901px) {
+  #app .products {
+    grid-auto-rows: max-content !important;
+    align-content: start !important;
+  }
+  #app .product {
+    display: flex !important;
+    flex-direction: column !important;
+    align-self: start !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+  #app .product .pic {
+    display: flex !important;
+    flex: 0 0 92px !important;
+    width: 100% !important;
+    height: 92px !important;
+  }
+  #app .product .pinfo {
+    display: block !important;
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    min-height: 58px !important;
+    padding: 9px !important;
+    overflow: visible !important;
+    color: #183047 !important;
+    background: #fff !important;
+  }
+  #app .product .pname,
+  #app .product .price {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+}
+</style>
+
+
+<style id="transaction-no-inner-scroll">
+/* Desktop: keep every transaction row visible; only the menu catalog has its own scrollbar.
+   If the cart grows, the document grows naturally instead of hiding rows in an inner scroll area. */
+@media (min-width: 901px) {
+  html, body {
+    height: auto !important;
+    min-height: 100% !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+  #app.app {
+    height: auto !important;
+    min-height: 100dvh !important;
+    overflow: visible !important;
+  }
+  #app .main {
+    flex: 1 0 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    align-items: start !important;
+    grid-template-columns: minmax(0, 1.65fr) minmax(310px, .85fr) !important;
+  }
+  #app .menu-panel {
+    height: calc(100dvh - 185px) !important;
+    min-height: 360px !important;
+    overflow: hidden !important;
+  }
+  #app .products {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+  #app .cart {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    align-self: start !important;
+  }
+  #app .cart-table {
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+  #app .cartitems {
+    flex: 0 0 auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  #app .summary {
+    flex: 0 0 auto !important;
+  }
+  #app .footer-nav {
+    flex: 0 0 72px !important;
+  }
+}
+</style>
+
+
+<style id="sticky-bottom-navigation-final">
+/* Keep the main POS navigation accessible while the page/transaction list grows. */
+#app .footer-nav {
+  position: fixed !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 1000 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  flex: none !important;
+  min-height: 72px !important;
+  background: rgba(255,255,255,.98) !important;
+  box-shadow: 0 -3px 14px rgba(15,35,55,.08) !important;
+}
+/* Reserve space so the fixed bar never covers the last transaction or action. */
+#app { padding-bottom: 82px !important; box-sizing: border-box !important; }
+@media (max-width: 800px) {
+  #app .footer-nav { min-height: 62px !important; height: 62px !important; padding-bottom: max(7px, env(safe-area-inset-bottom)) !important; }
+  #app { padding-bottom: 72px !important; }
+}
+</style>
+
+</head>
+<body>
+<div id="app" class="app hidden"></div>
+<div id="login" class="login">
+  <div class="loginbox" style="position:relative">
+    <button type="button" class="login-settings-btn" onclick="openLoginSettings()" title="Pengaturan" aria-label="Pengaturan">⚙</button>
+    <div class="loginlogo">☕</div><h2 style="text-align:center;margin:5px 0">POS Kasir</h2>
+    <div class="field"><label>Nama Kasir</label><input id="loginName" class="input" placeholder="Nama kasir" onblur="this.value=formatPersonName(this.value)"></div>
+    <div class="field"><label>Shift</label><select id="loginShift" class="select"><option value="1">Shift 1</option><option value="2">Shift 2</option><option value="3">Shift 3</option></select></div>
+    <button class="btn primary" style="width:100%;margin-top:6px" onclick="login()">Masuk</button>
+    <button class="btn light" style="width:100%;margin-top:8px" onclick="openReport(true)">Lihat Laporan</button>
+  </div>
+</div>
+<div id="modal" class="modal hidden"></div>
+<div id="toast" class="toast hidden"></div>
+
+<script src="./native-bridge.bundle.js"></script>
+<script>
+const KEY='warkopKasirV1';
+const ORDER_TYPES=['Dine In','Take Away'];
+const PRINTER_SERVICES = [
+  '00001101-0000-1000-8000-00805f9b34fb', // SPP Standard Serial Port Profile
+  '49535343-fe7d-4ae5-8fa9-9fafd205e455', // ISSC Thermal Printer
+  'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
+  '000018f0-0000-1000-8000-00805f9b34fb'  // General Service
+];
+
+const defaults={settings:{name:'Warkop',address:'',tax:0,logo:'',qris:''},shiftSessions:[],products:[
+{id:'p1',cat:'Kopi',name:'Kopi Hitam',price:10000,icon:'☕',img:''},{id:'p2',cat:'Kopi',name:'Kopi Susu',price:14000,icon:'🥤',img:''},
+{id:'p3',cat:'Non Kopi',name:'Teh Manis',price:7000,icon:'🍵',img:''},{id:'p4',cat:'Non Kopi',name:'Coklat',price:12000,icon:'🍫',img:''},
+{id:'p5',cat:'Makanan',name:'Nasi Goreng',price:18000,icon:'🍳',img:''},{id:'p6',cat:'Cemilan',name:'Kentang Goreng',price:12000,icon:'🍟',img:''},
+{id:'p7',cat:'Additional',name:'Telur',price:5000,icon:'🥚',img:''}],sales:[],voids:[],pending:[],lastNo:0};
+
+let db=load(), btState='disconnected', btDevice=null, printCharacteristic=null;
+let nativeSnapshotQueue=Promise.resolve();
+if(window.PosNativeStorage?.isNative?.()) {
+  window.PosNativeStorage.loadSnapshot().then(async r=>{
+    if(r?.found) {
+      try {
+        const restored=JSON.parse(r.json);
+        if(!restored || typeof restored!=='object' || !Array.isArray(restored.products)) throw new Error('Snapshot SQLite tidak valid');
+        db=restored;
+        // Jalankan normalisasi data lama yang sama tanpa menulis ulang ke localStorage.
+        db.shiftSessions=Array.isArray(db.shiftSessions)?db.shiftSessions:[];
+        db.products=Array.isArray(db.products)?db.products:[];
+        db.products.forEach(p=>{p.cat=toProperCase(p.cat||'Lain-lain');p.name=toProperCase(p.name||'');p.icon=iconFor(p.cat);});
+      } catch(e) { console.error('Snapshot SQLite tidak dapat dipulihkan:',e); db=load(); }
+    } else {
+      // Migrasi satu kali: ambil data lama dari localStorage jika belum ada snapshot SQLite.
+      db=load();
+      if(localStorage.getItem(KEY)) {
+        await window.PosNativeStorage.saveSnapshot(JSON.stringify(db));
+        localStorage.removeItem(KEY);
+      }
+    }
+    restoreRuntime();
+    start();
+  }).catch(e=>{console.error('SQLite restore snapshot error',e); db=load(); restoreRuntime(); start();});
+}
+let state={cashier:'',shift:'',cart:[],category:'Semua',screen:'kasir',discountType:'Rp',discount:0,sessionId:null,reportGuest:false,orderType:'Dine In',billId:null,customer:''};
+let settingsFromLogin=false;
+if(!window.PosNativeStorage?.isNative?.()) restoreRuntime();
+
+function load(){
+ try{
+   const x=JSON.parse(localStorage.getItem(KEY));
+   const d=x||structuredClone(defaults);
+   d.shiftSessions=d.shiftSessions||[];
+   d.products=Array.isArray(d.products)?d.products:[];
+   // Rapikan data menu lama saat aplikasi dibuka, tanpa menghapus foto manual yang sudah ada.
+   d.products.forEach(p=>{
+     p.cat=toProperCase(p.cat||'Lain-lain');
+     p.name=toProperCase(p.name||'');
+     p.icon=iconFor(p.cat);
+   });
+   if(x && !window.PosNativeStorage?.isNative?.()) localStorage.setItem(KEY,JSON.stringify(d));
+   return d;
+ }catch(e){return structuredClone(defaults)}
+}
+function save(){
+  const serialized=JSON.stringify(db);
+  if(window.PosNativeStorage?.isNative?.()) {
+    nativeSnapshotQueue=nativeSnapshotQueue.catch(()=>{}).then(()=>window.PosNativeStorage.saveSnapshot(serialized)).catch(e=>{console.error('SQLite snapshot save failed',e);throw e;});
+  } else {
+    localStorage.setItem(KEY,serialized);
+  }
+}
+function persistRuntime(){
+ db.runtime={
+   cashier:state.cashier,shift:state.shift,sessionId:state.sessionId,
+   cart:state.cart,category:state.category,discountType:state.discountType,discount:state.discount,
+   orderType:state.orderType,billId:state.billId,customer:state.customer
+ };
+ save();
+}
+function clearRuntime(){
+ state.orderType='Dine In';state.billId=null;state.customer='';
+ db.runtime={cashier:'',shift:'',sessionId:null,cart:[],category:'Semua',discountType:'Rp',discount:0,orderType:'Dine In',billId:null,customer:''};
+ save();
+}
+function restoreRuntime(){
+ const r=db.runtime;
+ if(!r||!r.cashier||!r.sessionId)return;
+ const s=getSession(r.sessionId);
+ if(!s||s.closed){clearRuntime();return;}
+ state.cashier=r.cashier;state.shift=r.shift;state.sessionId=r.sessionId;
+ state.cart=Array.isArray(r.cart)?r.cart:[];
+ state.category=r.category||'Semua';state.discountType=r.discountType||'Rp';state.discount=r.discount||0;
+ state.orderType=ORDER_TYPES.includes(r.orderType)?r.orderType:'Dine In';
+ state.customer=r.customer||'';
+ // Bill yang sedang dibuka hanya dipulihkan jika masih berstatus open.
+ state.billId=(r.billId&&(db.sales||[]).some(x=>x.id===r.billId&&isOpenBill(x)))?r.billId:null;
+ state.screen='kasir';state.reportGuest=false;
+}
+function rupiah(n){return 'Rp '+Math.round(n||0).toLocaleString('id-ID')}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function now(){return new Date()}
+// ---------- Tipe order & status bill ----------
+// status: 'paid' (lunas, juga untuk data lama tanpa field status) | 'open' (bill belum lunas) | 'cancelled' (bill dibatalkan)
+function isPaidSale(s){return !s.status||s.status==='paid'}
+function isOpenBill(s){return s.status==='open'&&!s.voided}
+function openBills(){return (db.sales||[]).filter(isOpenBill)}
+// Pendapatan dihitung pada saat bill dibayar (bukan saat dibuat).
+function revDate(s){return s.paidBusinessDate||s.businessDate}
+function revShift(s){return String(s.paidShift||s.shift)}
+function revSessionId(s){return s.paidSessionId||s.sessionId}
+function paidSalesInRange(f,t,sh){return (db.sales||[]).filter(s=>isPaidSale(s)&&revDate(s)>=f&&revDate(s)<=t&&(!sh||revShift(s)===String(sh)))}
+function calcTotals(cart,discount,discountType,taxPct){
+ const sub=cart.reduce((a,x)=>a+x.price*x.qty,0);
+ const disc=discountType==='%'?sub*(Number(discount)||0)/100:Number(discount)||0;
+ const after=Math.max(0,sub-disc),tax=Number(taxPct)||0,ppn=tax?after*tax/100:0;
+ return {sub,disc,after,tax,ppn,total:after+ppn};
+}
+function customerLabel(type=state.orderType){return type==='Take Away'?'Nomer Meja / Nama':'Nomor Meja / Nama'}
+function customerPlaceholder(type=state.orderType){return type==='Take Away'?'Masukan No Meja/Nama':'Masukan No Meja/Nama'}
+function dateKey(d=new Date()){
+ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');
+ return `${y}-${m}-${day}`;
+}
+function shiftBusinessDate(s,d=new Date()){let x=new Date(d);if(String(s)==='3' && x.getHours()<7)x.setDate(x.getDate()-1);return dateKey(x)}
+let toastTimer=null;
+function toast(t,type='success'){
+ const el=document.getElementById('toast');
+ // Pastikan notifikasi berada langsung di body agar tidak tertahan stacking context elemen lain.
+ if(el.parentElement!==document.body)document.body.appendChild(el);
+ const message=String(t??'');
+ const isError=type==='error'||/gagal|tidak valid|wajib diisi/i.test(message);
+ const kind=isError?'error':(type==='info'?'info':'success');
+ const title=kind==='error'?'Belum berhasil':(kind==='info'?'Informasi':'Berhasil');
+ const mark=kind==='error'?'!':(kind==='info'?'i':'✓');
+ el.className=`toast toast-${kind}`;
+ el.innerHTML=`<span class="toast-mark">${mark}</span><span class="toast-copy"><span class="toast-title">${title}</span><span class="toast-message">${esc(message)}</span></span>`;
+ el.classList.remove('hidden');
+ clearTimeout(toastTimer);
+ toastTimer=setTimeout(()=>el.classList.add('hidden'),3200);
+}
+function showPaymentNotice(title,message,type='success'){
+ const old=document.getElementById('paymentNoticeBackdrop'); if(old)old.remove();
+ const icon=type==='success'?'✓':'ⓘ';
+ const wrap=document.createElement('div');
+ wrap.id='paymentNoticeBackdrop';
+ wrap.className='payment-notice-backdrop';
+ wrap.innerHTML=`<div class="payment-notice" role="dialog" aria-modal="true"><div class="payment-notice-row"><div class="payment-icon ${type}">${icon}</div><div><div class="payment-title">${esc(title)}</div><div class="payment-message">${esc(message)}</div></div></div><div class="payment-notice-actions"><button class="btn primary" onclick="closePaymentNotice()">OK</button></div></div>`;
+ document.body.appendChild(wrap);
+}
+function closePaymentNotice(){const el=document.getElementById('paymentNoticeBackdrop');if(el)el.remove()}
+function iconFor(c){const key=String(c??'').trim().toLocaleLowerCase('id-ID');return {'kopi':'☕','non kopi':'🥤','makanan':'🍛','cemilan':'🍟','additional':'➕','lain-lain':'🍽️'}[key]||'🍽️'}
+function getSession(id){return (db.shiftSessions||[]).find(s=>s.id===id)}
+function getActiveSession(shift,bizDate=shiftBusinessDate(shift)){
+ return (db.shiftSessions||[]).find(s=>s.shift===String(shift)&&s.businessDate===bizDate&&!s.closed);
+}
+function createShiftSession(name,shift){
+ const businessDate=shiftBusinessDate(shift);
+ let existing=getActiveSession(shift,businessDate);
+ if(existing){
+   if(existing.cashier!==name){
+     if(!confirm(`Shift ${shift} sedang aktif atas nama ${existing.cashier}. Apakah anda akan menggunakan shift ${shift} lagi?`)) return null;
+   }
+   return existing;
+ }
+ const prior=(db.shiftSessions||[]).find(s=>s.shift===String(shift)&&s.businessDate===businessDate&&s.closed);
+ if(prior && !confirm(`Apakah anda akan menggunakan shift ${shift} lagi?`)) return null;
+ const session={id:'S'+Date.now()+'_'+Math.random().toString(36).slice(2,7),date:new Date().toISOString(),businessDate,cashier:name,shift:String(shift),closed:false,closedAt:null};
+ db.shiftSessions=db.shiftSessions||[];
+ db.shiftSessions.push(session);
+ save();
+ return session;
+}
+function formatPersonName(value){
+ return String(value||'').trim().replace(/\s+/g,' ').toLocaleLowerCase('id-ID')
+   .replace(/(^|[\s'-])([\p{L}])/gu,(match,separator,letter)=>separator+letter.toLocaleUpperCase('id-ID'));
+}
+function login(){
+ const name=formatPersonName(document.getElementById('loginName').value), shift=document.getElementById('loginShift').value;
+ document.getElementById('loginName').value=name;
+ if(!name)return toast('Nama kasir wajib diisi.');
+ const session=createShiftSession(name,shift);
+ if(!session)return;
+ state.cashier=name;state.shift=shift;state.sessionId=session.id;state.screen='kasir';state.reportGuest=false;
+ persistRuntime();
+ render();document.getElementById('login').classList.add('hidden');
+ backupReminder();
+}
+
+function logout(){state.cashier='';state.shift='';state.sessionId=null;state.cart=[];state.billId=null;state.customer='';state.orderType='Dine In';state.reportGuest=false;state.screen='kasir';clearRuntime();document.getElementById('app').classList.add('hidden');document.getElementById('login').classList.remove('hidden')}
+function render(){
+ const a=document.getElementById('app');a.classList.remove('hidden');
+ const guest=!!state.reportGuest;
+ const footer=guest
+   ? `<button class="navbtn active" onclick="closeReport()">↩ Kembali ke Login</button>`
+   : `<button class="navbtn ${state.screen==='laporan'?'active':''}" onclick="openReport()">📊 Laporan</button><button class="navbtn ${btState==='connected'?'bt-connected':''}" id="btNavBtn" onclick="bt()" title="${btState==='connected'?'Klik untuk memutuskan Bluetooth':btState==='pairing'?'Klik untuk memilih ulang printer Bluetooth':'Klik untuk menghubungkan Bluetooth'}">🖨️ <span id="btNavText">${btState==='pairing'?'⟳ Pairing…':btState==='connected'?'Putuskan BT':'Connect BT'}</span></button><button class="navbtn ${state.screen==='pengaturan'?'active':''}" onclick="openSettings()">⚙️ Pengaturan</button>`;
+ a.innerHTML=`<header class="topbar"><div class="brand">${esc(db.settings.name)}</div><div class="status"><span class="pill" id="clock"></span><span class="pill">${esc(state.cashier||'Mode laporan')}</span>${state.shift?`<span class="pill">Shift ${state.shift}</span>`:''}</div></header>
+ <main class="main">${state.screen==='kasir'?cashierHTML():state.screen==='laporan'?reportHTML():settingsHTML()}</main>
+ <footer class="footer-nav">${footer}</footer>`;
+ updateClock();
+}
+setInterval(updateClock,1000);
+function updateClock(){const e=document.getElementById('clock');if(e)e.textContent=now().toLocaleString('id-ID',{dateStyle:'short',timeStyle:'medium'})}
+function cashierHTML(){
+ const cats=['Semua',...new Set(['Kopi','Non Kopi','Makanan','Cemilan','Additional','Lain-lain',...db.products.map(p=>p.cat).filter(Boolean)])];
+ const q=window.menuQ||'';
+ const ps=db.products.filter(p=>(state.category==='Semua'||p.cat===state.category)&&(`${p.name} ${p.cat}`).toLowerCase().includes(q.toLowerCase()));
+ return `<section class="panel menu-panel"><div class="toolbar"><input class="input search" value="${esc(q)}" oninput="window.menuQ=this.value;filterMenuProducts()" placeholder="🔎 Cari menu..."></div><div class="cats">${cats.map(c=>`<button class="cat ${state.category===c?'active':''}" onclick="state.category='${c}';render()">${c}</button>`).join('')}</div><div class="products">${ps.length?ps.map(p=>`<button class="product" onclick="addCart('${p.id}')"><div class="pic">${p.img?`<img src="${p.img}">`:iconFor(p.cat)}</div><div class="pinfo"><div class="pname">${esc(p.name)}</div><div class="price">${rupiah(p.price)}</div></div></button>`).join(''):'<div class="empty" style="grid-column:1/-1">Menu tidak ditemukan.</div>'}</div></section>${cartHTML()}`;
+}
+function filterMenuProducts(){
+  const q=(window.menuQ||'').toLowerCase();
+  const box=document.querySelector('.menu-panel .products');
+  if(!box)return;
+  const ps=db.products.filter(p=>
+    (state.category==='Semua'||p.cat===state.category) &&
+    (`${p.name} ${p.cat}`).toLowerCase().includes(q)
+  );
+  box.innerHTML=ps.length
+    ? ps.map(p=>`<button class="product" onclick="addCart('${p.id}')"><div class="pic">${p.img?`<img src="${p.img}">`:iconFor(p.cat)}</div><div class="pinfo"><div class="pname">${esc(p.name)}</div><div class="price">${rupiah(p.price)}</div></div></button>`).join('')
+    : '<div class="empty" style="grid-column:1/-1">Menu tidak ditemukan.</div>';
+}
+
+function cartHTML(){
+ const sub=state.cart.reduce((a,x)=>a+x.price*x.qty,0);
+ const disc=state.discountType==='%'?sub*(Number(state.discount)||0)/100:Number(state.discount)||0;
+ const after=Math.max(0,sub-disc),tax=Number(db.settings.tax)||0,ppn=tax?after*tax/100:0,total=after+ppn;
+ const itemCount=state.cart.reduce((a,x)=>a+x.qty,0);
+ return `<section class="panel cart">
+   <div class="cart-tabs">
+     <button class="pending-main" onclick="saveBillModal()"><span>Simpan Bill</span></button>
+     <button class="pending-list-btn" onclick="billList()"><span>Daftar Bill${(openBills().length+(db.pending||[]).length)?` (${openBills().length+(db.pending||[]).length})`:''}</span></button>
+   </div>
+   <div class="ordertype">${ORDER_TYPES.map(t=>`<button type="button" class="${state.orderType===t?'active':''}" onclick="setOrderType('${t}')">${t==='Dine In'?'🍽️':'🥡'} ${t}</button>`).join('')}</div>
+   ${state.billId?`<div class="bill-banner"><span>Bill <b>${esc(state.billId)}</b>${state.customer?' • '+esc(state.customer):''}</span><button type="button" onclick="releaseBill()">Lepas</button></div>`:''}
+   <div class="cart-table">
+     <div class="cartcols"><span>No</span><span>Nama Menu</span><span>Harga</span><span>Qty</span><span>Total</span><span>×</span></div>
+     <div class="cartitems">${state.cart.length?state.cart.map((x,i)=>`
+       <div class="cartrow">
+         <span class="cart-no">${i+1}</span>
+         <div class="cart-name"><span class="strong">${esc(x.name)}</span>${x.note?`<div class="mini" style="color:#16834a;white-space:normal">Catatan: ${esc(x.note)}</div>`:''}<button type="button" class="btn light" style="padding:3px 6px;font-size:10px;margin-top:4px" onclick="editCartNote('${x.lineKey||x.id}')">${x.note?'Ubah Catatan':'＋ Catatan'}</button></div>
+         <span class="cart-price">${rupiah(x.price)}</span>
+         <div class="qty">
+           <button onclick="changeQty('${x.lineKey||x.id}',-1)">−</button><span>${x.qty}</span><button onclick="changeQty('${x.lineKey||x.id}',1)">+</button>
+         </div>
+         <span class="cart-total">${rupiah(x.price*x.qty)}</span>
+         <button class="remove-cart" title="Hapus" onclick="removeCart('${x.lineKey||x.id}')">×</button>
+       </div>`).join(''):`<div class="empty cart-empty">Belum ada menu dipilih.</div>`}</div>
+   </div>
+   <div class="summary">
+     <div class="sumline"><span>Total Item</span><span>${itemCount}</span></div>
+     <div class="sumline"><span>Subtotal</span><span>${rupiah(sub)}</span></div>
+     <div class="discount-box">
+       <div class="discount-title">🏷️ Diskon <b>-${rupiah(disc)}</b></div>
+       <div class="discount-inputs">
+         <select class="select" onchange="state.discountType=this.value;persistRuntime();render()"><option ${state.discountType==='Rp'?'selected':''}>Rp</option><option ${state.discountType==='%'?'selected':''}>%</option></select>
+         <input class="input" type="number" min="0" value="${state.discount||''}" placeholder="0" oninput="state.discount=this.value;persistRuntime();updateCartTotalsOnly()">
+       </div>
+     </div>
+     ${tax?`<div class="sumline"><span>PPN ${tax}%</span><span>${rupiah(ppn)}</span></div>`:''}
+     <div class="cart-grand-total"><span>TOTAL BAYAR</span><b>${rupiah(total)}</b></div>
+     <button class="pay-big" ${state.cart.length?'':'disabled'} onclick="payModal()">&nbsp;${state.billId?'Bayar Bill':'Bayar'}</button>
+   </div>
+ </section>`;
+}
+function updateCartTotalsOnly(){
+ const root=document.querySelector('.cart');
+ if(!root)return;
+ const sub=state.cart.reduce((a,x)=>a+x.price*x.qty,0);
+ const disc=state.discountType==='%'?sub*(Number(state.discount)||0)/100:Number(state.discount)||0;
+ const after=Math.max(0,sub-disc),tax=Number(db.settings.tax)||0,ppn=tax?after*tax/100:0,total=after+ppn;
+ const totalEl=root.querySelector('.cart-grand-total b'); if(totalEl)totalEl.textContent=rupiah(total);
+ const title=root.querySelector('.discount-title b'); if(title)title.textContent='-'+rupiah(disc);
+}
+function setOrderType(t){
+ if(!ORDER_TYPES.includes(t))return;
+ state.orderType=t;persistRuntime();render();
+}
+function releaseBill(){
+ // Lepas bill dari keranjang tanpa mengubah bill yang tersimpan.
+ if(state.cart.length&&!confirm('Perubahan yang belum disimpan pada bill ini akan dibuang. Lanjutkan?'))return;
+ state.cart=[];state.discount=0;state.billId=null;state.customer='';persistRuntime();render();
+}
+function fmtTime(iso){return new Date(iso).toLocaleString('id-ID',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).replace(/\./g,':').replace(',','')}
+function typeBadge(t){return t?`<span class="otype-badge ${t==='Take Away'?'ta':'di'}">${esc(t)}</span>`:''}
+
+// ---------- Open Bill ----------
+function saveBillModal(){
+ if(!state.cart.length)return toast('Keranjang kosong.');
+ const session=getSession(state.sessionId);
+ if(!session||session.closed)return toast('Shift sudah closing. Silakan masuk dengan shift yang aktif.');
+ const t=calcTotals(state.cart,state.discount,state.discountType,db.settings.tax);
+ modal(`<div class="modalhead"><h3 style="margin:0;font-weight:500">Simpan Bill (Belum Lunas)</h3><button class="close" onclick="closeModal()">×</button></div>
+ <div class="notice">${typeBadge(state.orderType)} Total tagihan <span>${rupiah(t.total)}</span></div>
+ <div class="field"><label>${customerLabel()} *</label><input id="customer" class="input" value="${esc(state.customer||'')}" placeholder="${customerPlaceholder()}" onblur="this.value=formatPersonName(this.value)"></div>
+ <div class="mini" style="margin:0 0 10px">Bill disimpan dengan status <b>BELUM LUNAS</b> dan tidak dihitung sebagai penjualan sampai dibayar.</div>
+ <div style="display:flex;gap:8px"><button class="btn light" style="flex:1" onclick="saveBill(false)">Simpan</button><button class="btn primary" style="flex:1" onclick="saveBill(true)">Simpan &amp; Cetak Tagihan</button></div>`);
+}
+function saveBill(print){
+ const session=getSession(state.sessionId);
+ if(!session||session.closed)return toast('Shift sudah closing. Silakan masuk dengan shift yang aktif.');
+ if(!state.cart.length)return toast('Keranjang kosong.');
+ const customer=formatPersonName(document.getElementById('customer').value);
+ document.getElementById('customer').value=customer;
+ if(!customer)return toast(`${customerLabel()} wajib diisi.`);
+ const t=calcTotals(state.cart,state.discount,state.discountType,db.settings.tax);
+ const items=state.cart.map(x=>({id:x.id,name:x.name,price:x.price,qty:x.qty,note:x.note||''}));
+ const nowIso=new Date().toISOString();
+ let sale=state.billId?db.sales.find(x=>x.id===state.billId&&isOpenBill(x)):null;
+ if(sale){
+   sale.items=items;sale.customer=customer;sale.orderType=state.orderType;
+   sale.discount=Number(state.discount)||0;sale.discountType=state.discountType;sale.tax=Number(db.settings.tax)||0;sale.total=t.total;
+   sale.updatedAt=nowIso;sale.editCount=(sale.editCount||0)+1;
+ }else{
+   const id='TRX-'+String(++db.lastNo).padStart(5,'0');
+   sale={id,date:nowIso,businessDate:session.businessDate,sessionId:session.id,cashier:state.cashier,shift:state.shift,customer,orderType:state.orderType,items,discount:Number(state.discount)||0,discountType:state.discountType,tax:Number(db.settings.tax)||0,total:t.total,status:'open',method:'',cash:0,change:0,voided:false};
+   db.sales.push(sale);
+ }
+ state.cart=[];state.discount=0;state.billId=null;state.customer='';persistRuntime();
+ closeModal();render();
+ toast(`Bill ${sale.id} disimpan (belum lunas).`);
+ if(print)printReceipt(sale,false,false);
+}
+function billList(){
+ const bills=[...openBills()].sort((a,b)=>new Date(a.date)-new Date(b.date));
+ const legacy=db.pending||[];
+ if(!bills.length&&!legacy.length){toast('Belum ada bill terbuka.','info');return;}
+ const billRows=bills.map(s=>`<div class="pending-row bill-row"><div><b>${esc(s.id)}</b> ${typeBadge(s.orderType)} <span class="unpaid-badge">BELUM LUNAS</span><div class="mini">${esc(s.customer)} • ${fmtTime(s.date)} • Shift ${esc(String(s.shift))} • ${s.items.reduce((a,x)=>a+x.qty,0)} item</div><div class="strong" style="font-size:13px">${rupiah(s.total)}</div></div><div class="bill-actions"><button class="btn primary" onclick="loadBill('${s.id}',true)">Bayar</button><button class="btn light" onclick="loadBill('${s.id}',false)">Lanjut</button><button class="btn light" onclick="printBill('${s.id}')">Tagihan</button><button class="btn danger" onclick="cancelBill('${s.id}')">Batal</button></div></div>`).join('');
+ const legacyRows=legacy.length?`<div class="mini" style="margin:12px 0 6px">Pending lama (belum punya nomor bill)</div>`+legacy.map(p=>`<div class="pending-row"><div><b>${esc(p.id)}</b><div class="mini">${esc(p.cashier||'')} • Shift ${esc(String(p.shift||''))} • ${p.cart.length} item</div></div><div style="display:flex;gap:6px"><button class="btn primary" onclick="resumePending('${p.id}')">Lanjut</button><button class="btn danger" onclick="deletePending('${p.id}')">Hapus</button></div></div>`).join(''):'';
+ const outstanding=bills.reduce((a,s)=>a+s.total,0);
+ modal(`<div class="modalhead"><h3 style="margin:0;font-size:16px">Daftar Bill Belum Lunas</h3><button class="close" onclick="closeModal()">×</button></div>
+ ${bills.length?`<div class="notice">${bills.length} bill • Total belum lunas <span>${rupiah(outstanding)}</span></div>`:''}
+ <div>${billRows}${legacyRows}</div>`);
+}
+function loadBill(id,thenPay=false){
+ const s=db.sales.find(x=>x.id===id&&isOpenBill(x));
+ if(!s)return toast('Bill tidak ditemukan atau sudah tidak terbuka.','error');
+ const session=getSession(state.sessionId);
+ if(!session||session.closed)return toast('Shift sudah closing. Silakan masuk dengan shift yang aktif.');
+ if(state.cart.length&&state.billId!==id)return toast('Keranjang masih berisi pesanan. Simpan sebagai bill atau kosongkan dulu.','error');
+ state.cart=s.items.map(x=>({id:x.id,name:x.name,price:x.price,qty:x.qty,note:x.note||'',lineKey:'L'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}));
+ state.billId=s.id;state.orderType=ORDER_TYPES.includes(s.orderType)?s.orderType:'Dine In';state.customer=s.customer||'';
+ state.discount=s.discount||0;state.discountType=s.discountType||'Rp';
+ persistRuntime();closeModal();render();
+ if(thenPay)payModal();else toast(`Bill ${s.id} dibuka. Tambah pesanan lalu Simpan Bill atau Bayar.`,'info');
+}
+function printBill(id){
+ const s=db.sales.find(x=>x.id===id&&isOpenBill(x));
+ if(s)printReceipt(s,false,false);
+}
+function cancelBill(id){
+ const s=db.sales.find(x=>x.id===id&&isOpenBill(x));
+ if(!s)return toast('Bill tidak ditemukan atau sudah tidak terbuka.','error');
+ const session=getSession(state.sessionId);
+ if(!state.cashier||!session||session.closed)return toast('Masuk dengan shift aktif untuk membatalkan bill.','error');
+ const reason=prompt(`Alasan membatalkan bill ${s.id} (${s.customer}):`);
+ if(!reason?.trim())return toast('Alasan pembatalan wajib diisi.');
+ s.voided=true;s.status='cancelled';s.cancelledAt=new Date().toISOString();
+ db.voids.push({saleId:s.id,date:s.cancelledAt,businessDate:session.businessDate,sessionId:session.id,cashier:state.cashier,shift:state.shift,reason:'[Bill belum lunas] '+reason.trim(),total:s.total});
+ if(state.billId===s.id){state.cart=[];state.discount=0;state.billId=null;state.customer='';}
+ persistRuntime();closeModal();render();toast(`Bill ${s.id} dibatalkan.`);
+}
+
+// ---------- Pending lama (data lama sebelum fitur open bill) ----------
+function resumePending(id){
+ const p=(db.pending||[]).find(x=>x.id===id); if(!p)return;
+ if(state.cart.length)return toast('Keranjang masih berisi pesanan. Simpan sebagai bill atau kosongkan dulu.','error');
+ state.cart=p.cart||[];state.discount=p.discount||0;state.discountType=p.discountType||'Rp';
+ persistRuntime();
+ db.pending=db.pending.filter(x=>x.id!==id);save();closeModal();render();toast('Transaksi pending dilanjutkan.');
+}
+function deletePending(id){
+ db.pending=db.pending.filter(x=>x.id!==id);save();closeModal();render();billList();
+}
+function addCart(id){const p=db.products.find(x=>x.id===id);if(!p)return;const x=state.cart.find(x=>x.id===id&&!x.note);if(x)x.qty++;else state.cart.push({...p,qty:1,note:'',lineKey:'L'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)});persistRuntime();render()}
+function getCartLine(key){return state.cart.find(x=>String(x.lineKey||x.id)===String(key))}
+function changeQty(key,n){const x=getCartLine(key);if(!x)return;x.qty+=n;if(x.qty<=0)state.cart=state.cart.filter(y=>y!==x);persistRuntime();render()}
+function removeCart(key){const x=getCartLine(key);if(!x)return;state.cart=state.cart.filter(y=>y!==x);persistRuntime();render()}
+function editCartNote(key){const x=getCartLine(key);if(!x)return;const quick=['Less Sugar','Normal Sugar','No Sugar','Less Ice','No Ice','Pedas','Tidak Pedas','Sambal Dipisah'];const choices=quick.map(v=>`<button type="button" class="btn light" style="margin:3px" onclick="setCartNote('${String(key)}', '${v}')">${v}</button>`).join('');modal(`<div class="modalhead"><h3 style="margin:0;font-size:16px">Catatan ${esc(x.name)}</h3><button class="close" onclick="closeModal()">×</button></div><div class="mini" style="margin:8px 0">Pilih catatan cepat atau tulis permintaan khusus.</div><div style="display:flex;flex-wrap:wrap;gap:4px">${choices}</div><div class="field" style="margin-top:12px"><label>Catatan bebas</label><textarea id="cartNoteInput" class="input" rows="3" placeholder="Contoh: gula 25%, sambal dipisah...">${esc(x.note||'')}</textarea></div><div style="display:flex;gap:8px"><button class="btn light" style="flex:1" onclick="setCartNote('${String(key)}','')">Hapus Catatan</button><button class="btn primary" style="flex:1" onclick="saveCartNote('${String(key)}')">Simpan</button></div>`)}
+function setCartNote(key,value){const x=getCartLine(key);if(!x)return;x.note=value;persistRuntime();closeModal();render()}
+function saveCartNote(key){const el=document.getElementById('cartNoteInput');const x=getCartLine(key);if(!x)return;x.note=(el?.value||'').trim();persistRuntime();closeModal();render()}
+function clearCart(){if(state.cart.length&&confirm('Kosongkan keranjang?')){state.cart=[];state.discount=0;state.billId=null;state.customer='';persistRuntime();render()}}
+function payModal(){
+ const total=calcTotals(state.cart,state.discount,state.discountType,db.settings.tax).total;
+ modal(`<div class="modalhead"><h3 style="margin:0;font-weight:500">${state.billId?'Bayar Bill '+esc(state.billId):'Metode Pembayaran'}</h3><button class="close" onclick="closeModal()">×</button></div>
+ <div class="notice">${typeBadge(state.orderType)} Total pembayaran <span>${rupiah(total)}</span></div>
+ <div class="field"><label>${customerLabel()} *</label><input id="customer" class="input" value="${esc(state.customer||'')}" placeholder="${customerPlaceholder()}" onblur="this.value=formatPersonName(this.value)"></div>
+ <div class="field"><label>Metode Pembayaran</label><select id="method" class="select" onchange="cashFields()"><option value="Cash">Cash</option><option value="QRIS">QRIS</option><option value="Lainnya">Lainnya</option></select></div>
+ <div id="cashField" class="field"><label>Uang diterima</label><input id="cash" class="input" type="number" placeholder="${total}"></div>
+ <div id="otherField" class="field hidden"><label>Nama Pembayaran</label><input id="otherMethod" class="input" placeholder="Contoh: Transfer BCA, GoPay, ShopeePay"></div>
+ <div id="qrisPreview" class="hidden" style="text-align:center;margin:10px">${db.settings.qris?`<img src="${db.settings.qris}" style="max-width:260px;max-height:260px;border:1px solid #ddd;border-radius:10px">`:'<div class="notice">QRIS belum diupload di Pengaturan.</div>'}</div>
+ <button class="btn primary" style="width:100%" onclick="completePayment(${total})">Simpan Pembayaran</button>`);
+}
+function cashFields(){
+ const m=document.getElementById('method').value;
+ document.getElementById('cashField').classList.toggle('hidden',m!=='Cash');
+ document.getElementById('qrisPreview').classList.toggle('hidden',m!=='QRIS');
+ document.getElementById('otherField').classList.toggle('hidden',m!=='Lainnya');
+}
+function completePayment(total){
+ const session=getSession(state.sessionId);
+ if(!session||session.closed)return toast('Shift sudah closing. Silakan masuk dengan shift yang aktif.');
+ const customer=formatPersonName(document.getElementById('customer').value), selectedMethod=document.getElementById('method').value;
+ document.getElementById('customer').value=customer;
+ if(!customer)return toast(`${customerLabel()} wajib diisi.`);
+ // Jika membayar bill terbuka, pastikan bill masih ada dan belum dibayar/dibatalkan.
+ let bill=null;
+ if(state.billId){
+   bill=db.sales.find(x=>x.id===state.billId&&isOpenBill(x));
+   if(!bill){state.billId=null;persistRuntime();closeModal();render();return toast('Bill sudah tidak terbuka (sudah dibayar atau dibatalkan).','error');}
+ }
+
+ const confirmBtn=document.querySelector('#modal .modalbox .btn.primary');
+ if(confirmBtn?.dataset.busy==='1')return;
+ if(confirmBtn)confirmBtn.dataset.busy='1';
+
+ let cash=0, method=selectedMethod;
+ if(selectedMethod==='Cash'){
+   cash=Number(document.getElementById('cash').value)||0;
+   if(cash<total){if(confirmBtn)confirmBtn.dataset.busy='0';return toast('Uang diterima kurang dari total.');}
+ }else if(selectedMethod==='QRIS'){
+   if(!db.settings.qris){if(confirmBtn)confirmBtn.dataset.busy='0';return toast('QRIS belum diatur.');}
+ }else{
+   method=(document.getElementById('otherMethod').value||'').trim();
+   if(!method){if(confirmBtn)confirmBtn.dataset.busy='0';return toast('Nama pembayaran lainnya wajib diisi.');}
+ }
+
+ const paidAt=new Date().toISOString();
+ const items=state.cart.map(x=>({id:x.id,name:x.name,price:x.price,qty:x.qty,note:x.note||''}));
+ const payInfo={status:'paid',paidAt,paidSessionId:session.id,paidBusinessDate:session.businessDate,paidShift:state.shift,paidCashier:state.cashier,method,cash,change:method==='Cash'?cash-total:0,voided:false};
+ let sale;
+ if(bill){
+   // Lunasi bill yang sama: nomor TRX tetap, tanggal pembuatan tetap, pembayaran dicatat di shift/kasir saat ini.
+   sale=Object.assign(bill,{customer,orderType:state.orderType,items,discount:Number(state.discount)||0,discountType:state.discountType,tax:Number(db.settings.tax)||0,total},payInfo);
+ }else{
+   const id='TRX-'+String(++db.lastNo).padStart(5,'0');
+   sale=Object.assign({id,date:paidAt,businessDate:session.businessDate,sessionId:session.id,cashier:state.cashier,shift:state.shift,customer,orderType:state.orderType,items,discount:Number(state.discount)||0,discountType:state.discountType,tax:Number(db.settings.tax)||0,total},payInfo);
+   db.sales.push(sale);
+ }
+ db.lastSession={date:dateKey(),shift:state.shift,closed:false,sessionId:session.id};
+ state.cart=[];state.discount=0;state.billId=null;state.customer='';persistRuntime();
+ closeModal();render();
+ if(method==='Cash')showPaymentNotice('Pembayaran berhasil',`Kembalian ${rupiah(sale.change)}`,'success');
+ if(selectedMethod==='QRIS')showPaymentNotice('Pembayaran QRIS',`Pastikan pembayaran sesuai nominal ${rupiah(total)}.`,'info');
+ printReceipt(sale,false);
+}
+function openReport(viewOnly=false){
+ state.screen='laporan';
+ state.reportGuest=!!viewOnly || !state.cashier;
+ render();
+ if(viewOnly){
+   document.getElementById('login').classList.add('hidden');
+ }
+}
+
+function closeShift(){
+ const session=getSession(state.sessionId);
+ if(!session){toast('Sesi shift tidak ditemukan.');return;}
+ if(session.closed){toast('Shift ini sudah closing.');return;}
+ const ob=openBills(),obTotal=ob.reduce((a,s)=>a+s.total,0);
+ const carry=ob.length?`\n\nMasih ada ${ob.length} bill belum lunas (${rupiah(obTotal)}). Bill ini TIDAK dihitung sebagai penjualan dan akan dibawa ke shift berikutnya.`:'';
+ if(!confirm(`Closing Shift ${session.shift}? Setelah closing, transaksi pada shift ini tidak dapat di-void lagi dan laporan Excel shift ini baru dapat ditarik.${carry}`))return;
+ state.billId=null;state.customer='';state.orderType='Dine In';
+ session.closed=true;
+ session.closedAt=new Date().toISOString();
+ db.lastSession={date:dateKey(),shift:session.shift,closed:true,sessionId:session.id};
+ db.runtime={cashier:'',shift:'',sessionId:null,cart:[],category:'Semua',discountType:'Rp',discount:0,orderType:'Dine In',billId:null,customer:''};
+ save();
+ state.cashier='';
+ state.shift='';
+ state.sessionId=null;
+ state.cart=[];
+ state.discount=0;
+ state.reportGuest=true;
+ state.screen='laporan';
+ const backupPromise=autoBackupOnClose(session);
+ render();
+ backupPromise.then(backedUp=>toast(backedUp?`Shift ${session.shift} berhasil closing. File backup otomatis tersimpan di folder Download.`:`Shift ${session.shift} berhasil closing, tetapi backup otomatis gagal. Lakukan backup manual di Pengaturan.`,backedUp?'success':'error'));
+}
+
+  function reportHTML(){
+  const today=dateKey(), sales=paidSalesInRange(today,today,''), voids=db.voids.filter(v=>v.businessDate===today);
+  const active=getSession(state.sessionId);
+  const isGuest=!!state.reportGuest;
+  return `<section class="panel report-shell">
+    <div class="report-window">
+      <div class="report-titlebar">
+        <div><b>📊 Laporan Penjualan</b><div class="mini">${isGuest?'Mode lihat laporan':'Kasir aktif • Shift '+esc(state.shift||'')}</div></div>
+        <button class="close" onclick="closeReport()">×</button>
+      </div>
+      <div class="toolbar report-toolbar">
+        <input id="rFrom" class="input" style="max-width:145px" type="date" value="${today}">
+        <input id="rTo" class="input" style="max-width:145px" type="date" value="${today}">
+        <select id="rShift" class="select" style="max-width:130px"><option value="">Semua Shift</option><option>1</option><option>2</option><option>3</option></select>
+        <button class="btn primary" onclick="refreshReport()">Terapkan</button>
+        <button class="btn light" onclick="printOwnerDailyReport()">Print Laporan</button>
+        <button class="btn light ${btState==='connected'?'bt-connected':''}" id="reportBtBtn" onclick="bt()" title="${btState==='connected'?'Klik untuk memutuskan Bluetooth printer':'Hubungkan printer Bluetooth untuk mencetak laporan'}">🖨️ <span id="reportBtText">${btState==='pairing'?'⟳ Pairing…':btState==='connected'?'Putuskan BT':'Connect Bluetooth'}</span></button>
+        <button class="btn light" onclick="exportExcel()">Export Excel</button>
+        ${active&&!active.closed?'<button class="btn danger" onclick="closeShift()">Closing Shift</button>':''}
+      </div>
+      <div id="reportBody">${reportBody(sales,voids)}</div>
+    </div>
+  </section>`;
+  }
+
+function closeReport(){
+ if(state.reportGuest || !state.cashier){
+   state.reportGuest=false; state.cashier=''; state.shift=''; state.sessionId=null; state.cart=[]; state.screen='kasir';
+   document.getElementById('app').classList.add('hidden');
+   document.getElementById('login').classList.remove('hidden');
+   return;
+ }
+ state.reportGuest=false;
+ state.screen='kasir';
+ render();
+}
+function reportBody(sales,voids){
+ const stime=s=>s.paidAt||s.date;
+ const sortedSales=[...sales].sort((a,b)=>new Date(stime(b))-new Date(stime(a)));
+ const sortedVoids=[...voids].sort((a,b)=>new Date(b.date)-new Date(a.date));
+ const total=sortedSales.filter(x=>!x.voided).reduce((a,x)=>a+x.total,0);
+ const bills=[...openBills()].sort((a,b)=>new Date(a.date)-new Date(b.date));
+ const billTotal=bills.reduce((a,x)=>a+x.total,0);
+ const canAct=!!state.cashier&&!state.reportGuest;
+ const typeSum=['Dine In','Take Away'].map(t=>{const l=sortedSales.filter(x=>!x.voided&&x.orderType===t);return l.length?`${t}: <b>${l.length}</b> (${rupiah(l.reduce((a,x)=>a+x.total,0))})`:''}).filter(Boolean).join(' &nbsp;•&nbsp; ');
+ return `<div style="padding:12px"><div class="grid2"><div class="notice">Transaksi: <b>${sortedSales.length}</b></div><div class="notice">Penjualan (lunas): <b>${rupiah(total)}</b></div></div>
+ ${typeSum?`<div class="mini" style="margin:6px 2px 0">${typeSum}</div>`:''}
+ ${bills.length?`<div class="notice unpaid-notice" style="margin-top:8px">Bill belum lunas: <b>${bills.length}</b> • <b>${rupiah(billTotal)}</b> <span class="mini">(belum dihitung sebagai penjualan)</span></div>`:''}
+ <div class="report-tabs">
+   <button id="reportTabSales" class="report-tab active" onclick="switchReportTab('sales')">🧾 Daftar Struk</button>
+   <button id="reportTabBills" class="report-tab" onclick="switchReportTab('bills')">💳 Belum Lunas <span class="tab-count">${bills.length}</span></button>
+   <button id="reportTabVoids" class="report-tab" onclick="switchReportTab('voids')">↩ Daftar Void <span class="tab-count">${sortedVoids.length}</span></button>
+ </div>
+ <section id="reportSalesPanel" class="report-tabpanel">
+   <div class="field"><input id="ticketSearch" class="input" oninput="filterTickets()" placeholder="🔎 Cari nomor struk / kasir / meja..."></div>
+   <div class="scroll"><table id="ticketTable"><thead><tr><th>No</th><th>Waktu Bayar</th><th>Kasir</th><th>Shift</th><th>Tipe</th><th>Meja/Nama</th><th>Total</th><th>Metode</th><th>Aksi</th></tr></thead><tbody>
+   ${sortedSales.length?sortedSales.map(s=>{const ss=getSession(revSessionId(s));const canVoid=!!state.cashier&&!s.voided&&ss&&!ss.closed&&ss.id===state.sessionId;return `<tr><td>${s.id}${s.voided?' <span class="void-badge">VOID</span>':''}</td><td>${new Date(stime(s)).toLocaleString('id-ID')}</td><td>${esc(s.paidCashier||s.cashier)}</td><td>${esc(revShift(s))}</td><td>${esc(s.orderType||'-')}</td><td>${esc(s.customer)}</td><td>${rupiah(s.total)}</td><td>${esc(s.method)}</td><td><button class="btn light" onclick="printById('${s.id}',${s.voided?'true':'false'})">Reprint</button>${canVoid?` <button class="btn danger" onclick="voidSale('${s.id}')">Void</button>`:''}</td></tr>`}).join(''):'<tr><td colspan="9" class="empty">Belum ada transaksi.</td></tr>'}
+   </tbody></table></div>
+ </section>
+ <section id="reportBillsPanel" class="report-tabpanel hidden">
+   <div class="mini" style="margin-bottom:6px">Semua bill yang masih terbuka, tidak terpengaruh filter tanggal/shift.${canAct?' Untuk membayar atau menambah pesanan, buka dari <b>Daftar Bill</b> di layar kasir.':''}</div>
+   <div class="scroll"><table id="billTable"><thead><tr><th>No</th><th>Dibuat</th><th>Kasir</th><th>Shift</th><th>Tipe</th><th>Meja/Nama</th><th>Total</th><th>Aksi</th></tr></thead><tbody>
+   ${bills.length?bills.map(s=>`<tr><td>${s.id} <span class="unpaid-badge">BELUM LUNAS</span></td><td>${new Date(s.date).toLocaleString('id-ID')}</td><td>${esc(s.cashier)}</td><td>${esc(String(s.shift))}</td><td>${esc(s.orderType||'-')}</td><td>${esc(s.customer)}</td><td>${rupiah(s.total)}</td><td><button class="btn light" onclick="printBill('${s.id}')">Tagihan</button>${canAct?` <button class="btn danger" onclick="cancelBill('${s.id}')">Batal</button>`:''}</td></tr>`).join(''):'<tr><td colspan="8" class="empty">Tidak ada bill belum lunas.</td></tr>'}
+   </tbody></table></div>
+ </section>
+ <section id="reportVoidsPanel" class="report-tabpanel hidden">
+   <div class="scroll"><table id="voidTable"><thead><tr><th>No Struk</th><th>Waktu</th><th>Kasir</th><th>Shift</th><th>Alasan</th><th>Total</th><th>Detail</th></tr></thead><tbody>
+   ${sortedVoids.length?sortedVoids.map(v=>`<tr><td>${v.saleId}</td><td>${new Date(v.date).toLocaleString('id-ID')}</td><td>${esc(v.cashier)}</td><td>Shift ${v.shift}</td><td>${esc(v.reason)}</td><td>${rupiah(v.total)}</td><td><button class="btn light" onclick="showVoidDetail('${v.saleId}')">Lihat Detail</button></td></tr>`).join(''):'<tr><td colspan="7" class="empty">Belum ada transaksi void.</td></tr>'}
+   </tbody></table></div>
+ </section></div>`;
+}
+function switchReportTab(tab){
+ const map={sales:['reportSalesPanel','reportTabSales'],bills:['reportBillsPanel','reportTabBills'],voids:['reportVoidsPanel','reportTabVoids']};
+ Object.entries(map).forEach(([k,[panel,btn]])=>{
+   document.getElementById(panel)?.classList.toggle('hidden',k!==tab);
+   document.getElementById(btn)?.classList.toggle('active',k===tab);
+ });
+}
+function showVoidDetail(saleId){
+ const v=db.voids.find(x=>x.saleId===saleId), s=db.sales.find(x=>x.id===saleId); if(!v||!s)return;
+ const items=s.items.map(x=>`<tr><td>${esc(x.name)}</td><td>${rupiah(x.price)}</td><td>${x.qty}</td><td>${rupiah(x.price*x.qty)}</td></tr>`).join('');
+ const sub=s.items.reduce((a,x)=>a+x.price*x.qty,0), disc=s.discountType==='%'?sub*s.discount/100:s.discount, after=Math.max(0,sub-disc), ppn=s.tax?after*s.tax/100:0;
+ modal(`<div class="modalhead"><div><h3 style="margin:0">Detail Void ${esc(s.id)}</h3><div class="mini">${new Date(v.date).toLocaleString('id-ID')} • ${esc(s.cashier)} • Shift ${s.shift}</div></div><button class="close" onclick="closeModal()">×</button></div>
+ <div class="notice"><b>Meja / Nama:</b> ${esc(s.customer)}<br><b>Alasan Void:</b> ${esc(v.reason)}</div>
+ <div class="scroll"><table><thead><tr><th>Nama Menu</th><th>Harga</th><th>Qty</th><th>Total</th></tr></thead><tbody>${items}</tbody></table></div>
+ <div class="sumline"><span>Subtotal</span><span>${rupiah(sub)}</span></div>${disc?`<div class="sumline"><span>Diskon</span><span>-${rupiah(disc)}</span></div>`:''}${s.tax?`<div class="sumline"><span>PPN ${s.tax}%</span><span>${rupiah(ppn)}</span></div>`:''}<div class="sumline" style="font-size:14px"><b>Total Void</b><b>${rupiah(s.total)}</b></div>
+ <div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn light" onclick="closeModal()">Tutup</button></div>`);
+}
+function refreshReport(){
+ const f=document.getElementById('rFrom').value,t=document.getElementById('rTo').value,sh=document.getElementById('rShift').value;
+ const sales=paidSalesInRange(f,t,sh);
+ const voids=db.voids.filter(v=>v.businessDate>=f&&v.businessDate<=t&&(!sh||v.shift===sh));
+ document.getElementById('reportBody').innerHTML=reportBody(sales,voids);
+}
+function filterTickets(){const q=document.getElementById('ticketSearch').value.toLowerCase();document.querySelectorAll('#ticketTable tbody tr').forEach(r=>r.style.display=r.textContent.toLowerCase().includes(q)?'':'none')}
+function voidSale(id){
+ const s=db.sales.find(x=>x.id===id);if(!s)return;
+ if(!isPaidSale(s))return alert('Bill belum lunas dibatalkan lewat menu Daftar Bill (tombol Batal).');
+ // Void mengikuti shift tempat transaksi DIBAYAR (untuk bill yang dilunasi di shift berbeda dari saat dibuat).
+ const session=getSession(revSessionId(s));
+ if(!session||session.closed)return alert('Transaksi tidak bisa di-void karena shift sudah closing.');
+ if(!state.sessionId||revSessionId(s)!==state.sessionId)return alert('Void hanya dapat dilakukan pada transaksi di shift aktif kasir ini.');
+ if(revDate(s)!==session.businessDate)return alert('Transaksi bukan bagian dari tanggal operasional shift aktif.');
+ const reason=prompt('Masukkan alasan void:');if(!reason?.trim())return toast('Alasan void wajib diisi.');
+ s.voided=true;
+ db.voids.push({saleId:s.id,date:new Date().toISOString(),businessDate:revDate(s),sessionId:revSessionId(s),cashier:state.cashier,shift:state.shift,reason:reason.trim(),total:s.total});
+ save();render();printReceipt(s,true)
+}
+function printById(id,voided){const s=db.sales.find(x=>x.id===id);if(s)printReceipt(s,voided,true)}
+
+// -------------------------------------------------------------
+// HYBRID PRINTING ENGINE (DIRECT WEB BT & RAWBT FALLBACK)
+// -------------------------------------------------------------
+function generateReceiptText(s, isVoid=false, reprint=false) {
+  const W = 32; // Lebar kertas thermal (umumnya 32 karakter)
+  
+  // Fungsi helper untuk meratakan teks ke tengah
+  const center = (text) => {
+    text = String(text);
+    const left = Math.max(0, Math.floor((W - text.length) / 2));
+    return ' '.repeat(left) + text + '\n';
+  };
+
+  const sub = s.items.reduce((a, x) => a + x.price * x.qty, 0);
+  const disc = s.discountType === '%' ? (sub * s.discount / 100) : s.discount;
+  const after = sub - disc;
+  const ppn = s.tax ? (after * s.tax / 100) : 0;
+
+  // Format waktu TANPA DETIK (hanya jam dan menit)
+  const formattedDate = new Date(s.date).toLocaleString('id-ID', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).replace(/\./g, ':'); // Mengubah titik pemisah jam (00.00) menjadi colon (00:00) jika diperlukan
+
+  let text = "";
+  
+  // Header: nama warkop dicetak lebih besar (double height), tetap rata tengah.
+  const storeName = (db.settings.name || "WARKOP").toUpperCase();
+  text += '\x1b\x61\x01' + '\x1d\x21\x10' + storeName + '\x1d\x21\x00\n' + '\x1b\x61\x00';
+  if (db.settings.address) text += center(db.settings.address);
+
+  // Status Void / Reprint / Belum Lunas dibuat Center juga
+  const unpaid = s.status === 'open' && !isVoid;
+  if (isVoid) text += center("*** VOID ***");
+  if (reprint) text += center("*** REPRINT ***");
+
+  text += "--------------------------------\n";
+  text += `No     : ${s.id}\n`;
+  text += `Waktu  : ${formattedDate}\n`;
+  if (s.paidAt && s.paidAt !== s.date && !unpaid) {
+    const paidDate = new Date(s.paidAt).toLocaleString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(/\./g, ':');
+    text += `Bayar  : ${paidDate}\n`;
+  }
+  text += `Kasir  : ${s.cashier}\n`;
+  if (s.orderType) text += `Tipe   : ${s.orderType}\n`;
+  text += `${s.orderType === 'Take Away' ? 'Nama   ' : 'Meja   '}: ${s.customer}\n`;
+  text += "--------------------------------\n";
+  
+  s.items.forEach(x => {
+    text += `${x.name}\n`;
+    if (x.note) text += `  * ${x.note}\n`;
+    const qtyPrice = `${x.qty} x ${rupiah(x.price)}`;
+    const tot = rupiah(x.price * x.qty);
+    const space = Math.max(1, W - qtyPrice.length - tot.length);
+    text += qtyPrice + " ".repeat(space) + tot + "\n";
+  });
+  
+  text += "--------------------------------\n";
+  
+  const padRow = (lbl, val) => {
+    lbl = String(lbl); val = String(val);
+    const sp = Math.max(1, W - lbl.length - val.length);
+    return lbl + " ".repeat(sp) + val + "\n";
+  };
+  
+  text += padRow("Subtotal", rupiah(sub));
+  if (disc) text += padRow("Diskon", "-" + rupiah(disc));
+  if (s.tax) text += padRow(`PPN ${s.tax}%`, rupiah(ppn));
+  text += padRow("TOTAL", rupiah(s.total));
+
+  if (unpaid) {
+    text += padRow("Status", "BELUM LUNAS");
+    text += "--------------------------------\n";
+    text += center("Mohon bayar di kasir");
+    text += center("Struk ini bukan bukti lunas") + "\n\n\n";
+    return text;
+  }
+  if (s.method === 'Cash') {
+    text += padRow("Diterima", rupiah(s.cash));
+    text += padRow("Kembali", rupiah(s.change));
+  }
+  text += padRow("Metode", s.method);
+  if (!isVoid) text += padRow("Status", "LUNAS");
+  text += "--------------------------------\n";
+  text += center("Terima Kasih!") + "\n\n\n"; // Menambah 2 baris enter di bawah
+
+  return text;
+}
+
+// Konversi logo Data URL menjadi bitmap ESC/POS untuk printer thermal 58 mm (384 dot).
+async function receiptLogoBytes() {
+  const src = db.settings.logo;
+  if (!src) return new Uint8Array(0);
+
+  const img = new Image();
+  img.src = src;
+  await new Promise((resolve, reject) => {
+    img.onload = resolve;
+    img.onerror = () => reject(new Error('Logo tidak dapat dibaca.'));
+  });
+
+  // Ukuran logo struk 58 mm: sekitar 20 mm lebar dan maksimal 15 mm tinggi.
+  const maxWidth = 160;
+  const maxHeight = 120;
+  const scale = Math.min(1, maxWidth / img.naturalWidth, maxHeight / img.naturalHeight);
+  const width = Math.max(1, Math.round(img.naturalWidth * scale));
+  const height = Math.max(1, Math.round(img.naturalHeight * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, width, height);
+  ctx.drawImage(img, 0, 0, width, height);
+
+  const pixels = ctx.getImageData(0, 0, width, height).data;
+  const bytesPerRow = Math.ceil(width / 8);
+  const raster = new Uint8Array(bytesPerRow * height);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * 4;
+      const gray = (pixels[i] * 299 + pixels[i + 1] * 587 + pixels[i + 2] * 114) / 1000;
+      if (gray < 160) raster[y * bytesPerRow + (x >> 3)] |= (0x80 >> (x & 7));
+    }
+  }
+
+  // GS v 0: raster bit image. Alignment center applies to the image.
+  const wL = bytesPerRow & 0xff;
+  const wH = (bytesPerRow >> 8) & 0xff;
+  const hL = height & 0xff;
+  const hH = (height >> 8) & 0xff;
+  const header = new Uint8Array([0x1b, 0x61, 0x01, 0x1d, 0x76, 0x30, 0x00, wL, wH, hL, hH]);
+  const footer = new Uint8Array([0x1b, 0x61, 0x00, 0x0a]);
+  const result = new Uint8Array(header.length + raster.length + footer.length);
+  result.set(header, 0);
+  result.set(raster, header.length);
+  result.set(footer, header.length + raster.length);
+  return result;
+}
+
+function concatPrintBytes(parts) {
+  const size = parts.reduce((n, part) => n + part.length, 0);
+  const out = new Uint8Array(size);
+  let offset = 0;
+  for (const part of parts) { out.set(part, offset); offset += part.length; }
+  return out;
+}
+
+async function buildReceiptBytes(plainText) {
+  const encoder = new TextEncoder();
+  let logo = new Uint8Array(0);
+  try { logo = await receiptLogoBytes(); }
+  catch (e) { console.warn('Logo struk dilewati:', e); }
+  return concatPrintBytes([
+    new Uint8Array([0x1b, 0x40]),
+    logo,
+    encoder.encode(plainText + '\n')
+  ]);
+}
+
+function bytesToBase64(bytes) {
+  let binary = '';
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+async function printViaRawBTText(plainText) {
+  try {
+    const bytes = await buildReceiptBytes(plainText);
+    const base64Data = bytesToBase64(bytes);
+    const intentUrl = 'intent:#Intent;' +
+      'action=ru.a404m.rawbtprinter.action.PRINT;' +
+      'category=android.intent.category.DEFAULT;' +
+      'type=text/plain;' +
+      'S.base64=' + base64Data + ';' +
+      'package=ru.a404m.rawbtprinter;' +
+      'end;';
+    window.location.href = intentUrl;
+    toast('Mengirim struk dan logo ke RawBT...');
+  } catch (e) {
+    console.error('RawBT print:', e);
+    toast('Gagal menyiapkan logo untuk dicetak.');
+  }
+}
+function receiptHTML(s,isVoid=false,reprint=false){
+  const sub=s.items.reduce((a,x)=>a+(Number(x.price)||0)*(Number(x.qty)||0),0);
+  const disc=s.discountType==='%'?sub*(Number(s.discount)||0)/100:(Number(s.discount)||0);
+  const after=sub-disc;
+  const ppn=s.tax?after*Number(s.tax)/100:0;
+  const itemRows=s.items.map(x=>{
+    const total=(Number(x.price)||0)*(Number(x.qty)||0);
+    return `<div class="r-item">
+      <div class="r-item-name">${esc(x.name)}</div>
+      ${x.note?`<div style="font-size:11px;color:#555;margin:2px 0 4px">* ${esc(x.note)}</div>`:''}
+      <div class="r-item-detail"><span>${x.qty} × ${rupiah(x.price)}</span><span>${rupiah(total)}</span></div>
+    </div>`;
+  }).join('');
+  const unpaid=s.status==='open'&&!isVoid;
+  const flag=(isVoid||reprint)?`<div class="r-flags">${isVoid?'<span>VOID</span>':''}${reprint?'<span>REPRINT</span>':''}</div>`:'';
+  const paidTime=(s.paidAt&&s.paidAt!==s.date&&!unpaid)?new Date(s.paidAt).toLocaleString('id-ID',{day:'numeric',month:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+  return `<div class="receipt-paper">
+    <div class="r-header">
+      ${db.settings.logo?`<img class="r-logo" src="${db.settings.logo}" alt="Logo">`:''}
+      <div class="r-store">${esc((db.settings.name||'WARKOP').toUpperCase())}</div>
+      ${db.settings.address?`<div class="r-address">${esc(db.settings.address).replace(/\n/g,'<br>')}</div>`:''}
+      ${flag}
+    </div>
+    <div class="r-divider"></div>
+    <div class="r-meta">
+      <div><span>No</span><i>:</i><b>${esc(s.id)}</b></div>
+      <div><span>Tanggal</span><i>:</i><b>${esc(new Date(s.date).toLocaleString('id-ID', {
+        day: 'numeric',
+        month: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }))}</b></div>
+      ${paidTime?`<div><span>Dibayar</span><i>:</i><b>${esc(paidTime)}</b></div>`:''}
+      <div><span>Kasir</span><i>:</i><b>${esc(s.cashier||'-')}</b></div>
+      ${s.orderType?`<div><span>Tipe</span><i>:</i><b>${esc(s.orderType)}</b></div>`:''}
+      <div><span>${s.orderType==='Take Away'?'Nama':'Meja/Nama'}</span><i>:</i><b>${esc(s.customer||'-')}</b></div>
+    </div>
+    <div class="r-divider"></div>
+    <div class="r-items">${itemRows}</div>
+    <div class="r-divider"></div>
+    <div class="r-summary">
+      <div><span>Subtotal</span><b>${rupiah(sub)}</b></div>
+      ${disc?`<div><span>Diskon${s.discountType==='%'?' ('+s.discount+'%)':''}</span><b>- ${rupiah(disc)}</b></div>`:''}
+      ${s.tax?`<div><span>PPN ${s.tax}%</span><b>${rupiah(ppn)}</b></div>`:''}
+      <div class="r-total"><span>TOTAL</span>${rupiah(s.total)}</div>
+      ${unpaid
+        ?`<div><span>Status</span><b>BELUM LUNAS</b></div>`
+        :`${s.method==='Cash'?`<div><span>Diterima</span><b>${rupiah(s.cash)}</b></div><div><span>Kembali</span><b>${rupiah(s.change)}</b></div>`:''}
+      <div><span>Metode</span><b>${esc(s.method||'-')}</b></div>${isVoid?'':'<div><span>Status</span><b>LUNAS</b></div>'}`}
+    </div>
+    <div class="r-divider"></div>
+    <div class="r-footer">${unpaid?'<div>Mohon bayar di kasir</div><div style="font-size:10px">Struk ini bukan bukti lunas</div>':'<div>Terima Kasih</div>'}</div>
+  </div>`;
+}
+
+function openReceiptPreview(s, isVoid = false, reprint = false) {
+  const old = document.getElementById('receiptPreviewBackdrop');
+  if (old) old.remove();
+
+  const wrap = document.createElement('div');
+  wrap.id = 'receiptPreviewBackdrop';
+  wrap.className = 'modal receipt-preview-modal';
+
+  // Build sections separately so receipt HTML can never affect button placement.
+  const box = document.createElement('div');
+  box.className = 'receipt-preview';
+
+  const head = document.createElement('div');
+  head.className = 'modalhead receipt-no-print';
+  head.innerHTML = `
+    <div>
+      <b>${reprint ? 'Reprint Struk' : 'Preview Struk'}</b>
+    </div>
+    <button class="close" onclick="closeReceiptPreview()">×</button>
+  `;
+
+  const area = document.createElement('div');
+  area.className = 'receipt-print-area';
+
+  const paper = document.createElement('div');
+  paper.className = 'receipt-print-paper';
+  paper.dataset.saleId = s.id;
+  paper.dataset.void = isVoid ? '1' : '0';
+  paper.dataset.reprint = reprint ? '1' : '0';
+  paper.innerHTML = receiptHTML(s, isVoid, reprint);
+  area.appendChild(paper);
+
+  const actions = document.createElement('div');
+  actions.className = 'receipt-actions receipt-no-print';
+  actions.innerHTML = `
+    <button class="btn light" onclick="closeReceiptPreview()">Tutup</button>
+    <button class="btn primary" onclick="printPreviewReceipt()">Print</button>
+  `;
+
+  box.appendChild(head);
+  box.appendChild(area);
+  box.appendChild(actions);
+  wrap.appendChild(box);
+  document.body.appendChild(wrap);
+}
+function closeReceiptPreview(){const el=document.getElementById('receiptPreviewBackdrop');if(el)el.remove()}
+
+
+async function printPreviewReceipt(){
+  const preview = document.querySelector('#receiptPreviewBackdrop .receipt-print-paper');
+  if (!preview) return;
+
+  const sForPreview = db.sales.find(x => x.id === preview.dataset.saleId);
+  const plainText = sForPreview ? generateReceiptText(sForPreview, preview.dataset.void === '1', preview.dataset.reprint === '1') : (preview.dataset.plainText || '');
+
+  // 1. PRIORITAS UTAMA: Jika Bluetooth Direct sudah terhubung, cetak langsung via Bluetooth (Sama seperti Struk/Void/Reprint)
+  if (syncBTConnection()) {
+    try {
+      await writeBluetoothReceipt(plainText);
+      toast('Berhasil dicetak langsung via Bluetooth.');
+      closeReceiptPreview();
+      return;
+    } catch (e) {
+      console.error('Direct Web Bluetooth print failed:', e);
+      resetBTState();
+    }
+  }
+
+  // 2. Jika Laporan Owner DAN di Android (tapi Bluetooth BELUM terhubung), gunakan RawBT
+  if (preview.dataset.ownerReport === '1' && navigator.userAgent.includes('Android')) {
+    printViaRawBTText(plainText);
+    closeReceiptPreview();
+    return;
+  }
+
+  // 3. Jika Struk / Void / Reprint DAN di Android (tapi Bluetooth BELUM terhubung), gunakan RawBT
+  if (navigator.userAgent.includes('Android')) {
+    const sId = preview.dataset.saleId;
+    const s = db.sales.find(x => x.id === sId);
+
+    if (s) {
+      const isVoid = preview.dataset.void === '1';
+      const reprint = preview.dataset.reprint === '1';
+
+      printViaRawBTText(generateReceiptText(s, isVoid, reprint));
+      closeReceiptPreview();
+      return;
+    }
+  }
+
+  // 4. Fallback untuk browser desktop / iOS
+  window.print();
+}
+
+async function writeBluetoothReceipt(plainText){
+  if(window.PosNativePrinter?.isNative?.()) return window.PosNativePrinter.printReceipt(await buildReceiptBytes(plainText));
+  if(!syncBTConnection()) throw new Error('Printer Bluetooth sudah terputus. Hubungkan ulang printer.');
+  const data=await buildReceiptBytes(plainText);
+  const canWriteWithoutResponse=!!printCharacteristic.properties?.writeWithoutResponse && typeof printCharacteristic.writeValueWithoutResponse==='function';
+  const chunkSize=180;
+  for(let i=0;i<data.length;i+=chunkSize){
+    if(!syncBTConnection()) throw new Error('Koneksi printer terputus.');
+    const chunk=data.slice(i,i+chunkSize);
+    if(canWriteWithoutResponse) await printCharacteristic.writeValueWithoutResponse(chunk);
+    else await printCharacteristic.writeValue(chunk);
+    if(i+chunkSize<data.length) await new Promise(resolve=>setTimeout(resolve,10));
+  }
+  return true;
+}
+
+
+async function writeBluetoothReportOnly(plainText) {
+  if(window.PosNativePrinter?.isNative?.()) return window.PosNativePrinter.printText(plainText);
+  if (!syncBTConnection()) {
+    throw new Error('Printer Bluetooth belum terhubung.');
+  }
+
+  const data = new TextEncoder().encode('\x1B@' + plainText);
+
+  const canWriteWithoutResponse =
+    !!printCharacteristic.properties?.writeWithoutResponse &&
+    typeof printCharacteristic.writeValueWithoutResponse === 'function';
+
+  const canWrite =
+    !!printCharacteristic.properties?.write &&
+    typeof printCharacteristic.writeValue === 'function';
+
+  if (!canWriteWithoutResponse && !canWrite) {
+    throw new Error('Printer tidak mendukung pengiriman data.');
+  }
+
+  const chunkSize = 180;
+
+  for (let i = 0; i < data.length; i += chunkSize) {
+    if (!syncBTConnection()) {
+      throw new Error('Koneksi printer terputus.');
+    }
+
+    const chunk = data.slice(i, i + chunkSize);
+
+    if (canWriteWithoutResponse) {
+      await printCharacteristic.writeValueWithoutResponse(chunk);
+
+      if (i + chunkSize < data.length) {
+        await new Promise(resolve => setTimeout(resolve, 15));
+      }
+    } else {
+      await printCharacteristic.writeValue(chunk);
+    }
+  }
+
+  return true;
+}
+
+async function printReceipt(s,isVoid=false,reprint=false){
+  const plainText=generateReceiptText(s,isVoid,reprint);
+  // Direct print only when a real Web Bluetooth GATT connection is active.
+  if(syncBTConnection()){
+    try{
+      await writeBluetoothReceipt(plainText);
+      toast('Struk berhasil dicetak.');
+      return;
+    }catch(e){
+      console.error('Direct Web Bluetooth print failed:',e);
+      resetBTState();
+    }
+  }
+  // No direct connection: show preview first.
+  openReceiptPreview(s,isVoid,reprint);
+}
+
+// -------------------------------------------------------------
+// WEB BLUETOOTH DIRECT (BLE/GATT ONLY)
+// -------------------------------------------------------------
+let btPairingToken=0;
+let autoBTTimer=null, autoBTBusy=false;
+// Simpan object perangkat selama halaman masih terbuka; getDevices() tidak tersedia di semua Chrome Android.
+let lastBTDevice=null;
+const btDisconnectHandlers=new WeakSet();
+
+async function bt(){
+  if(window.PosNativePrinter?.isNative?.()) { try { await window.PosNativePrinter.toggle(); } catch(e) { toast('Bluetooth gagal: '+(e.message||e),'error'); } return; }
+  // Tombol manual selalu tersedia; jika ditekan, hentikan timer auto-connect
+  // agar pemilihan printer oleh kasir menjadi prioritas.
+  if(autoBTTimer){clearTimeout(autoBTTimer);autoBTTimer=null;}
+  if(btState==='connected'){
+    // Jika diputus manual, hentikan percobaan sambung ulang otomatis.
+    try{localStorage.setItem('posBtAutoReconnect','0')}catch(e){}
+    try{if(btDevice?.gatt?.connected)btDevice.gatt.disconnect()}catch(e){}
+    lastBTDevice=null;
+    resetBTState();
+    toast('Bluetooth berhasil diputuskan.');
+    return;
+  }
+
+  // Pairing boleh dicoba kembali kapan saja. Ini penting jika pengguna
+  // berpindah menu sehingga dialog Bluetooth sebelumnya dibatalkan browser.
+  // Hentikan auto-reconnect saat pengguna memilih printer secara manual.
+  // Ini mencegah proses latar belakang membatalkan token pairing pengguna.
+  try{localStorage.setItem('posBtAutoReconnect','0')}catch(e){}
+  const pairingToken=++btPairingToken;
+  setBTState('pairing');
+
+  try{
+    if(!navigator.bluetooth||!navigator.bluetooth.requestDevice){
+      if(pairingToken===btPairingToken)resetBTState();
+      toast('Browser ini tidak mendukung Web Bluetooth. Gunakan RawBT.');
+      return;
+    }
+
+    // Important: classic SPP UUID 00001101 is NOT a Web Bluetooth GATT service.
+    // We only ask for known BLE printer services here.
+    const bleServices=[
+      '49535343-fe7d-4ae5-8fa9-9fafd205e455', // ISSC
+      'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
+      '000018f0-0000-1000-8000-00805f9b34fb', // Thermal Printer
+      '0000ffe0-0000-1000-8000-00805f9b34fb', // Common BLE UART
+      '0000ff00-0000-1000-8000-00805f9b34fb',
+      '0000ff10-0000-1000-8000-00805f9b34fb',
+      '0000ae30-0000-1000-8000-00805f9b34fb',
+      '0000e0ff-0000-1000-8000-00805f9b34fb'
+    ];
+
+    const device=await navigator.bluetooth.requestDevice({
+      acceptAllDevices:true,
+      optionalServices:bleServices
+    });
+
+    // Jika pengguna sudah memulai pairing baru, abaikan hasil pairing lama.
+    if(pairingToken!==btPairingToken){
+      try{if(device?.gatt?.connected)device.gatt.disconnect()}catch(e){}
+      return;
+    }
+
+    lastBTDevice=device;
+    try{
+      localStorage.setItem('posBtAutoReconnect','1');
+      localStorage.setItem('posBtDeviceId',device.id);
+    }catch(e){}
+    await connectBLEPrinter(device,pairingToken);
+    toast('Bluetooth Direct Connected: '+(device.name||'Printer BLE'));
+  }catch(e){
+    console.error('Web Bluetooth:',e);
+    // Jangan mengubah status dari percobaan lama jika sudah ada percobaan baru.
+    if(pairingToken===btPairingToken)resetBTState();
+    if(e?.name!=='NotFoundError'&&e?.name!=='AbortError'){
+      const detail=(e?.name?e.name+': ':'')+(e?.message||String(e));
+      toast('Gagal koneksi Bluetooth — '+detail);
+    }
+  }
+}
+
+
+// Sambungkan printer BLE yang sebelumnya sudah diberi izin oleh pengguna.
+// Browser tidak mengizinkan pemilihan perangkat baru tanpa tindakan pengguna,
+// tetapi perangkat yang sudah diizinkan dapat dicari kembali melalui getDevices().
+const BLE_PRINTER_SERVICES=[
+  '49535343-fe7d-4ae5-8fa9-9fafd205e455', // ISSC
+  'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
+  '000018f0-0000-1000-8000-00805f9b34fb', // Thermal Printer
+  '0000ffe0-0000-1000-8000-00805f9b34fb', // Common BLE UART
+  '0000ff00-0000-1000-8000-00805f9b34fb',
+  '0000ff10-0000-1000-8000-00805f9b34fb',
+  '0000ae30-0000-1000-8000-00805f9b34fb',
+  '0000e0ff-0000-1000-8000-00805f9b34fb'
+];
+
+async function connectBLEPrinter(device, token){
+  btDevice=device;
+  lastBTDevice=device;
+  printCharacteristic=null;
+  if(!btDisconnectHandlers.has(device)){
+    btDisconnectHandlers.add(device);
+    device.addEventListener?.('gattserverdisconnected',()=>{
+      if(btDevice===device){
+        resetBTState();
+        if(isAutoBTEnabled()){
+          toast('Printer terputus. POS akan mencoba menyambungkan kembali…');
+          scheduleAutoReconnect(2500);
+        }else{
+          toast('Bluetooth terputus. Silakan hubungkan ulang printer.');
+        }
+      }
+    });
+  }
+  if(!device?.gatt) throw new Error('Perangkat tidak menyediakan koneksi GATT.');
+  const server=await device.gatt.connect();
+  const serviceErrors=[];
+  let services=[];
+  // Ambil semua service yang diizinkan browser terlebih dahulu.
+  try{
+    services=await server.getPrimaryServices();
+  }catch(e){
+    serviceErrors.push('getPrimaryServices: '+(e?.message||e));
+  }
+  // Fallback satu per satu untuk browser/perangkat yang tidak mendukung enumerasi.
+  if(!services.length){
+    for(const uuid of BLE_PRINTER_SERVICES){
+      try{
+        const service=await server.getPrimaryService(uuid);
+        services.push(service);
+      }catch(e){
+        serviceErrors.push(uuid+': '+(e?.message||e));
+      }
+    }
+  }
+  const found=[];
+  for(const service of services){
+    try{
+      const chars=await service.getCharacteristics();
+      const writable=chars.find(c=>c.properties.write||c.properties.writeWithoutResponse);
+      found.push(service.uuid+' ['+chars.map(c=>c.uuid+':'+
+        (c.properties.write?'W':'')+
+        (c.properties.writeWithoutResponse?'WNR':'')+
+        (c.properties.notify?'N':'')).join(', ')+']');
+      if(writable){
+        printCharacteristic=writable;
+        break;
+      }
+    }catch(e){
+      serviceErrors.push(service.uuid+': '+(e?.message||e));
+    }
+  }
+  if(!printCharacteristic){
+    const detail=found.length
+      ? 'Service ditemukan tetapi tidak ada karakteristik WRITE. '+found.join(' | ')
+      : 'Tidak menemukan service BLE yang bisa diakses. '+serviceErrors.slice(0,4).join(' | ');
+    throw new Error(detail);
+  }
+  if(token!==btPairingToken)throw new Error('Percobaan koneksi dibatalkan.');
+  setBTState('connected');
+  try{
+    localStorage.setItem('posBtAutoReconnect','1');
+    localStorage.setItem('posBtDeviceId',device.id);
+  }catch(e){}
+  return true;
+}
+function isAutoBTEnabled(){
+  try{return localStorage.getItem('posBtAutoReconnect')==='1'}catch(e){return false}
+}
+function scheduleAutoReconnect(delay=5000){
+  if(btState!=='disconnected'||!isAutoBTEnabled()||autoBTTimer)return;
+  autoBTTimer=setTimeout(()=>{
+    autoBTTimer=null;
+    autoReconnectBluetooth();
+  },delay);
+}
+async function autoReconnectBluetooth(){
+  if(btState!=='disconnected'||autoBTBusy||!isAutoBTEnabled()||syncBTConnection())return;
+  if(!navigator.bluetooth)return;
+  autoBTBusy=true;
+  const token=++btPairingToken;
+  try{
+    let device=lastBTDevice; // paling andal selama halaman POS masih terbuka
+    // Setelah reload, ambil kembali perangkat yang sebelumnya sudah diizinkan browser.
+    if(!device && typeof navigator.bluetooth.getDevices==='function'){
+      const permitted=await navigator.bluetooth.getDevices();
+      let wantedId='';
+      try{wantedId=localStorage.getItem('posBtDeviceId')||''}catch(e){}
+      // Jika ID printer terakhir tersimpan, hanya pilih perangkat itu.
+      // Jangan sampai otomatis tersambung ke perangkat Bluetooth lain.
+      device=wantedId
+        ? (permitted.find(d=>d.id===wantedId)||null)
+        : (permitted[0]||null);
+    }
+    if(!device){
+      setBTState('disconnected');
+      scheduleAutoReconnect(5000);
+      return;
+    }
+    setBTState('pairing');
+    await connectBLEPrinter(device,token);
+    toast('Printer tersambung otomatis: '+(device.name||'Printer BLE'));
+  }catch(e){
+    console.warn('Auto reconnect Bluetooth:',e);
+    if(token===btPairingToken)resetBTState();
+    // Coba lagi berkala sampai printer dinyalakan dan GATT tersedia.
+    scheduleAutoReconnect(5000);
+  }finally{
+    autoBTBusy=false;
+  }
+}
+
+function setBTState(s){
+  btState=s;
+  const buttons=[
+    {b:document.getElementById('btNavBtn'),t:document.getElementById('btNavText'),connected:'Putuskan BT',disconnected:'Connect BT'},
+    {b:document.getElementById('reportBtBtn'),t:document.getElementById('reportBtText'),connected:'Putuskan BT',disconnected:'Connect Bluetooth'}
+  ];
+  buttons.forEach(({b,t,connected,disconnected})=>{
+    if(!b)return;
+    b.classList.toggle('bt-connected',s==='connected');
+    if(!t)return;
+    if(s==='pairing'){
+      t.innerHTML='<span class="bt-spin">⟳</span> Pairing…';
+      b.title='Sedang pairing. Klik lagi untuk memilih ulang printer Bluetooth';
+    }else if(s==='connected'){
+      t.textContent=connected;
+      b.title='Klik untuk memutuskan Bluetooth printer';
+    }else{
+      t.textContent=disconnected;
+      b.title='Bluetooth Direct (BLE/GATT).';
+    }
+  });
+}
+
+// Sinkronkan indikator dengan status GATT yang sebenarnya, bukan hanya flag lama.
+function resetBTState(){
+  btDevice=null;
+  printCharacteristic=null;
+  btState='disconnected';
+  setBTState('disconnected');
+}
+function syncBTConnection(){
+  if(btState==='connected'){
+    const actuallyConnected=!!(btDevice?.gatt?.connected && printCharacteristic);
+    if(!actuallyConnected){
+      resetBTState();
+      return false;
+    }
+    return true;
+  }
+  return false;
+}
+// Polling membantu memperbarui tombol ketika printer mati/di luar jangkauan.
+setInterval(()=>{
+  if(btState==='connected') syncBTConnection();
+  else if(btState==='disconnected' && isAutoBTEnabled()) scheduleAutoReconnect(1000);
+},1500);
+window.addEventListener('pageshow',()=>{
+  if(btState==='connected') syncBTConnection();
+  else if(btState==='disconnected' && isAutoBTEnabled()) scheduleAutoReconnect(500);
+});
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden && btState==='disconnected' && isAutoBTEnabled()) scheduleAutoReconnect(500);
+});
+
+function openSettings(){settingsFromLogin=false;state.screen='pengaturan';render()}
+function openLoginSettings(){
+  settingsFromLogin=true;
+  state.screen='pengaturan';
+  document.getElementById('login').classList.add('hidden');
+  render();
+}
+function settingsHTML(){return `<section class="panel settings-shell"><div class="settings-window"><div class="report-titlebar"><div><b>⚙️ Pengaturan</b><div class="mini">Konfigurasi tempat, menu, QRIS, dan backup • Backup terakhir: ${lastBackupLabel()}</div></div><button class="close" onclick="closeSettings()">×</button></div><div style="padding:16px"><div class="settingmenu"><button class="settingtab active">Umum</button><button class="settingtab" onclick="menuManager()">Daftar Menu</button><button class="settingtab" onclick="backupData()">Backup</button><button class="settingtab" onclick="restoreData()">Restore</button><button class="settingtab danger" onclick="wipe()">Hapus Semua Data</button></div><div class="grid2"><div class="field"><label>Nama Tempat</label><input id="setName" class="input" value="${esc(db.settings.name)}"></div><div class="field"><label>PPN (%)</label><input id="setTax" class="input" type="number" min="0" value="${db.settings.tax||''}"></div></div><div class="field"><label>Alamat</label><input id="setAddress" class="input" value="${esc(db.settings.address)}"></div><div class="grid2"><div class="field"><label>Logo Struk</label><input id="logoFile" type="file" accept="image/*" class="input">${db.settings.logo?`<div style="margin-top:8px;display:flex;align-items:center;gap:8px"><img src="${db.settings.logo}" alt="Logo tersimpan" style="max-width:100px;max-height:65px;object-fit:contain;border:1px solid var(--line);border-radius:8px;padding:4px"><button class="btn danger" onclick="removeSavedImage('logo')">Hapus Logo</button></div>`:'<div class="mini" style="margin-top:6px">Belum ada logo tersimpan.</div>'}</div><div class="field"><label>QRIS</label><input id="qrisFile" type="file" accept="image/*" class="input">${db.settings.qris?`<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><img src="${db.settings.qris}" alt="QRIS tersimpan" style="max-width:100px;max-height:100px;object-fit:contain;border:1px solid var(--line);border-radius:8px;padding:4px"><button class="btn danger" onclick="removeSavedImage('qris')">Hapus QRIS</button></div>`:'<div class="mini" style="margin-top:6px">Belum ada QRIS tersimpan.</div>'}<div class="settings-save-inline"><button class="btn primary" onclick="saveSettings()">Simpan Pengaturan</button></div></div></div></div></section>`}
+function closeSettings(){
+  state.screen='kasir';
+  if(settingsFromLogin){
+    settingsFromLogin=false;
+    document.getElementById('app').classList.add('hidden');
+    document.getElementById('login').classList.remove('hidden');
+    return;
+  }
+  render();
+}
+async function saveSettings(){
+  try{
+    const logo=await file64(document.getElementById('logoFile').files[0]);
+    const qris=await file64(document.getElementById('qrisFile').files[0]);
+    db.settings.name=document.getElementById('setName').value.trim()||'Warkop';
+    db.settings.address=document.getElementById('setAddress').value.trim();
+    db.settings.tax=Number(document.getElementById('setTax').value)||0;
+    if(logo)db.settings.logo=logo;if(qris)db.settings.qris=qris;
+    save();render();toast('Pengaturan berhasil disimpan.');
+  }catch(e){toast('Gagal menyimpan pengaturan: '+(e.message||'Terjadi kesalahan.'));}
+}
+function removeSavedImage(type){
+  const isLogo=type==='logo';
+  const label=isLogo?'logo':'QRIS';
+  if(!confirm(`Hapus ${label} yang tersimpan?`))return;
+  try{
+    if(isLogo)db.settings.logo='';else db.settings.qris='';
+    save();render();
+    toast(`${label} berhasil dihapus.`);
+  }catch(e){toast(`Gagal menghapus ${label}: `+(e.message||'Terjadi kesalahan.'));}
+}
+function file64(f){return new Promise(r=>{if(!f)return r('');const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(f)})}
+function menuManager(){modal(`<div class="modalhead"><h3>Daftar Menu</h3><button class="close" onclick="closeModal()">×</button></div><div id="menuEditor">${menuEditorHTML()}</div>`)}
+function getCategoryOptions(selected = '') {
+  const categories = [
+    'Kopi',
+    'Non Kopi',
+    'Makanan',
+    'Cemilan',
+    'Additional',
+    'Lain-lain',
+    ...db.products.map(p => p.cat)
+  ];
+
+  const unique = [...new Set(categories.filter(Boolean))];
+
+  return `
+    <option value="">Pilih Kategori</option>
+    ${unique.map(c => `
+      <option value="${esc(c)}" ${c === selected ? 'selected' : ''}>
+        ${esc(c)}
+      </option>
+    `).join('')}
+  `;
+}
+function menuEditorHTML() {
+  return `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <button class="btn light" onclick="downloadMenuTemplate()">Download Template Excel</button>
+      <button class="btn primary" onclick="document.getElementById('menuExcelFile').click()">Upload Menu Excel</button>
+      <input id="menuExcelFile" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden" onchange="uploadMenuExcel(this.files[0])">
+    </div>
+    
+    <div class="grid2">
+      <div class="field">
+        <label>Kategori</label>
+        <select id="mCat" class="select">
+          ${getCategoryOptions()}
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Nama Produk</label>
+        <input id="mName" class="input" placeholder="Nama menu">
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="field">
+        <label>Harga</label>
+        <input id="mPrice" class="input" type="number" placeholder="10000">
+      </div>
+
+      <div class="field">
+        <label>Foto</label>
+        <input id="mFile" class="input" type="file" accept="image/*">
+      </div>
+    </div>
+
+    <button class="btn primary" onclick="addProduct()">
+      + Tambahkan
+    </button>
+
+    <div class="scroll" style="margin-top:15px">
+      <table>
+        <thead>
+          <tr>
+            <th>Menu</th>
+            <th>Kategori</th>
+            <th>Harga</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${db.products.map(p => `
+            <tr>
+              <td>${esc(p.name)}</td>
+              <td>${esc(p.cat)}</td>
+              <td>${rupiah(p.price)}</td>
+              <td>
+                <button class="btn light" onclick="editProduct('${p.id}')">Edit</button>
+                <button class="btn danger" onclick="deleteProduct('${p.id}')">Hapus</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+async function blobToBase64(blob){const buf=await blob.arrayBuffer();let binary='';const bytes=new Uint8Array(buf);for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode(...bytes.subarray(i,i+0x8000));return btoa(binary);}
+async function downloadMenuTemplate(){
+  const blob=xlsxBlob([{name:'Template Menu',rows:[['Kategori','Menu','Harga'],['Kopi','Kopi Susu',14000]]}]);
+  if(window.PosNativeFiles?.isNative?.()){
+    try { await window.PosNativeFiles.saveBase64('Template_Penambahan_Menu.xlsx',await blobToBase64(blob),'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); toast('Template Excel berhasil disimpan ke folder Download.'); }
+    catch(e){toast('Gagal menyimpan template: '+(e.message||e),'error');}
+    return;
+  }
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='Template_Penambahan_Menu.xlsx';
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function normalizeMenuName(value){
+  return String(value??'').normalize('NFKC').trim().replace(/\s+/g,' ').toLocaleLowerCase('id-ID');
+}
+function toProperCase(value){
+  return String(value??'').normalize('NFKC').trim().replace(/\s+/g,' ')
+    .toLocaleLowerCase('id-ID')
+    .replace(/(^|[\s-])([\p{L}])/gu,(match,separator,letter)=>separator+letter.toLocaleUpperCase('id-ID'));
+}
+async function uploadMenuExcel(file){
+  if(!file)return;
+  try{
+    const rows=await readMenuXlsx(file);
+    if(!rows.length)throw new Error('File Excel tidak memiliki data menu.');
+    const header=rows[0].map(x=>String(x??'').trim().toLocaleLowerCase('id-ID'));
+    const ci={cat:header.indexOf('kategori'),name:header.indexOf('menu'),price:header.indexOf('harga')};
+    if(Object.values(ci).some(i=>i<0))throw new Error('Header wajib harus persis: Kategori, Menu, Harga.');
+    const parsed=[];
+    for(let i=1;i<rows.length;i++){
+      const r=rows[i]||[];
+      if(r.every(v=>String(v??'').trim()===''))continue;
+      const cat=toProperCase(r[ci.cat]),name=toProperCase(r[ci.name]);
+      const raw=String(r[ci.price]??'').trim();
+      const price=typeof r[ci.price]==='number'?r[ci.price]:Number(raw.replace(/[^\d.-]/g,''));
+      if(!cat||!name||!Number.isFinite(price)||price<=0)
+        throw new Error(`Data baris ${i+1} tidak valid. Pastikan Kategori, Menu, dan Harga terisi dengan benar.`);
+      parsed.push({cat,name,price:Math.round(price)});
+    }
+    if(!parsed.length)throw new Error('Tidak ada daftar menu yang dapat diproses.');
+    if(!confirm(`Proses ${parsed.length} daftar menu dari Excel?`))return;
+    let added=0,updated=0;
+    parsed.forEach((item,i)=>{
+      const key=normalizeMenuName(item.name);
+      const existing=db.products.find(p=>normalizeMenuName(p.name)===key);
+      if(existing){
+        existing.cat=item.cat;existing.name=item.name;existing.price=item.price;
+        existing.icon=iconFor(item.cat);existing.img='';
+        updated++;
+      }else{
+        db.products.push({id:'p'+Date.now()+'_'+i+'_'+Math.random().toString(36).slice(2,6),cat:item.cat,name:item.name,price:item.price,icon:iconFor(item.cat),img:''});
+        added++;
+      }
+    });
+    save();menuManager();render();
+    toast(`Upload Excel selesai: ${added} menu baru ditambahkan dan ${updated} menu diperbarui.`);
+  }catch(err){toast('Upload Excel gagal: '+(err.message||err));}
+}
+async function readMenuXlsx(file){
+  if(window.XLSX){const workbook=window.XLSX.read(await file.arrayBuffer(),{type:'array'});const first=workbook.Sheets[workbook.SheetNames[0]];return window.XLSX.utils.sheet_to_json(first,{header:1,raw:true,defval:''});}
+  if(typeof DecompressionStream==='undefined')throw new Error('Browser ini belum mendukung pembacaan Excel. Gunakan Chrome versi terbaru.');
+  const bytes=new Uint8Array(await file.arrayBuffer());
+  const view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
+  const findSig=(sig,start=0)=>{for(let i=start;i<=bytes.length-4;i++)if(view.getUint32(i,true)===sig)return i;return -1};
+  const eocd=findSig(0x06054b50,Math.max(0,bytes.length-65557));
+  if(eocd<0)throw new Error('Format file Excel tidak valid.');
+  const count=view.getUint16(eocd+10,true),centralOffset=view.getUint32(eocd+16,true);
+  const entries={};let pos=centralOffset;
+  for(let n=0;n<count;n++){
+    if(view.getUint32(pos,true)!==0x02014b50)throw new Error('Struktur Excel tidak valid.');
+    const method=view.getUint16(pos+10,true),compressed=view.getUint32(pos+20,true),nameLen=view.getUint16(pos+28,true),extraLen=view.getUint16(pos+30,true),commentLen=view.getUint16(pos+32,true),localOffset=view.getUint32(pos+42,true);
+    const name=new TextDecoder().decode(bytes.slice(pos+46,pos+46+nameLen));
+    const ln=view.getUint16(localOffset+26,true),le=view.getUint16(localOffset+28,true),start=localOffset+30+ln+le;
+    entries[name]={method,data:bytes.slice(start,start+compressed)};
+    pos+=46+nameLen+extraLen+commentLen;
+  }
+  async function unzip(name){
+    const e=entries[name];if(!e)return '';
+    let out=e.data;
+    if(e.method===8){
+      const ds=new DecompressionStream('deflate-raw');
+      out=new Uint8Array(await new Response(new Blob([out]).stream().pipeThrough(ds)).arrayBuffer());
+    }else if(e.method!==0)throw new Error('Kompresi file Excel tidak didukung.');
+    return new TextDecoder().decode(out);
+  }
+  const parse=x=>new DOMParser().parseFromString(x,'application/xml');
+  const wb=parse(await unzip('xl/workbook.xml')),rels=parse(await unzip('xl/_rels/workbook.xml.rels'));
+  const firstSheet=wb.getElementsByTagName('sheet')[0];if(!firstSheet)throw new Error('Sheet Excel tidak ditemukan.');
+  const rid=firstSheet.getAttribute('r:id');
+  const rel=[...rels.getElementsByTagName('Relationship')].find(x=>x.getAttribute('Id')===rid);
+  if(!rel)throw new Error('Relasi sheet Excel tidak ditemukan.');
+  let target=rel.getAttribute('Target').replace(/^\//,'');
+  if(!target.startsWith('xl/'))target='xl/'+target.replace(/^\.?\//,'');
+  const sheetDoc=parse(await unzip(target));
+  const ssDoc=entries['xl/sharedStrings.xml']?parse(await unzip('xl/sharedStrings.xml')):null;
+  const shared=ssDoc?[...ssDoc.getElementsByTagName('si')].map(si=>[...si.getElementsByTagName('t')].map(t=>t.textContent).join('')):[];
+  const colIndex=ref=>{let n=0;for(const c of ref.match(/[A-Z]+/i)?.[0]||'A')n=n*26+c.toUpperCase().charCodeAt(0)-64;return n-1};
+  return [...sheetDoc.getElementsByTagName('row')].map(row=>{
+    const arr=[];
+    [...row.getElementsByTagName('c')].forEach(c=>{
+      const idx=colIndex(c.getAttribute('r')||'A1'),type=c.getAttribute('t'),v=c.getElementsByTagName('v')[0]?.textContent??'';
+      let value=type==='s'?shared[Number(v)]??'':type==='inlineStr'?[...c.getElementsByTagName('t')].map(t=>t.textContent).join(''):v;
+      arr[idx]=type==='s'||type==='inlineStr'?value:(v===''?'':Number(v));
+    });
+    return arr;
+  });
+}
+async function addProduct(){
+  const cat=toProperCase(document.getElementById('mCat').value),name=toProperCase(document.getElementById('mName').value),price=Number(document.getElementById('mPrice').value);
+  if(!cat||!name||!price||price<=0)return toast('Kategori, nama menu, dan harga wajib diisi dengan benar.','error');
+  if(db.products.some(p=>normalizeMenuName(p.name)===normalizeMenuName(name)))
+    return toast(`Menu "${name}" sudah terdaftar.`, 'error');
+  try{
+    const img=await file64(document.getElementById('mFile').files[0]);
+    db.products.push({id:'p'+Date.now(),cat,name,price,icon:iconFor(cat),img});
+    save();menuManager();render();toast('Menu baru berhasil ditambahkan.');
+  }catch(e){toast('Gagal menambahkan menu: '+(e.message||'Terjadi kesalahan.'),'error');}
+}
+function editProduct(id) {
+  const p = db.products.find(x => x.id === id);
+  if (!p) return;
+
+  modal(`
+    <div class="modalhead">
+      <h3>Edit Menu</h3>
+      <button class="close" onclick="closeModal()">×</button>
+    </div>
+
+    <div class="field">
+      <label>Nama Produk</label>
+      <input id="editName" class="input" value="${esc(p.name)}">
+    </div>
+
+    <div class="field">
+      <label>Harga</label>
+      <input id="editPrice" class="input" type="number" value="${p.price}">
+    </div>
+
+    <div class="field">
+      <label>Kategori</label>
+      <select id="editCat" class="select">
+        ${getCategoryOptions(p.cat)}
+      </select>
+    </div>
+
+    <button class="btn primary" style="width:100%"
+      onclick="saveEditedProduct('${p.id}')">
+      Simpan Perubahan
+    </button>
+  `);
+}
+
+function saveEditedProduct(id) {
+  const p = db.products.find(x => x.id === id);
+  if (!p) return;
+
+  const name = toProperCase(document.getElementById('editName').value);
+  const price = Number(document.getElementById('editPrice').value);
+  const cat = toProperCase(document.getElementById('editCat').value);
+
+  if (!name || !price || !cat) {
+    return toast('Nama, harga, dan kategori wajib diisi.');
+  }
+
+  p.name = name;
+  p.price = price;
+  p.cat = cat;
+  p.icon = iconFor(cat);
+
+  save();
+  closeModal();
+  menuManager();
+}
+function deleteProduct(id){if(confirm('Hapus menu ini?')){db.products=db.products.filter(p=>p.id!==id);save();menuManager();render()}}
+// Menulis seluruh data ke file JSON dan mencatat waktu backup terakhir (ikut tersimpan di dalam file).
+async function downloadBackupFile(filename){
+  db.lastBackupAt=new Date().toISOString();
+  save();
+  const content=JSON.stringify(db,null,2);
+  if(window.PosNativeFiles?.isNative?.()){
+    await window.PosNativeFiles.saveText(filename,content,'application/json');
+    return true;
+  }
+  const blob=new Blob([content],{type:'application/json'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+  return true;
+}
+// Backup otomatis saat closing shift. Dipanggil setelah data shift sudah final.
+async function autoBackupOnClose(session){
+  try{
+    const hhmm=new Date().toTimeString().slice(0,5).replace(':','');
+    await downloadBackupFile(`backup-warkop-${session.businessDate||dateKey()}-shift${session.shift}-closing-${hhmm}.json`);
+    return true;
+  }catch(e){return false}
+}
+// Pengingat jika sudah lebih dari 1 hari tidak backup (dan ada transaksi).
+function backupReminder(){
+  try{
+    if(!(db.sales||[]).length)return;
+    const age=db.lastBackupAt?Date.now()-new Date(db.lastBackupAt).getTime():Infinity;
+    if(age>24*3600*1000)toast(db.lastBackupAt?`Backup terakhir ${fmtTime(db.lastBackupAt)}, sudah lebih dari 1 hari. Lakukan backup di Pengaturan > Backup.`:'Data belum pernah di-backup. Lakukan backup di Pengaturan > Backup.','info');
+  }catch(e){}
+}
+function lastBackupLabel(){return db.lastBackupAt?fmtTime(db.lastBackupAt):'belum pernah'}
+async function backupData(){
+  try{
+    // Simpan konteks kasir hanya jika benar-benar ada sesi aktif.
+    const active = state.sessionId ? getSession(state.sessionId) : null;
+    if(active && !active.closed && state.cashier){
+      persistRuntime();
+    }else{
+      db.runtime={cashier:'',shift:'',sessionId:null,cart:[],category:'Semua',discountType:'Rp',discount:0};
+      save();
+    }
+    await downloadBackupFile('backup-warkop-'+dateKey()+'.json');
+    if(window.PosNativeStorage?.isNative?.()) { await nativeSnapshotQueue; await window.PosNativeStorage.saveSnapshot(JSON.stringify(db)); }
+    toast(active && !active.closed && state.cashier
+      ? 'Backup berhasil. Shift aktif dan keranjang tersimpan untuk dilanjutkan saat restore.'
+      : 'Backup berhasil. Data tersimpan tanpa sesi shift aktif.');
+  }catch(e){toast('Backup gagal: '+(e.message||'Terjadi kesalahan.'));}
+}
+async function restoreData(){
+  const cur=state.sessionId?getSession(state.sessionId):null;
+  const live=cur&&!cur.closed&&state.cashier;
+  const warn='Restore akan MENGGANTI semua data di perangkat ini dengan isi file backup.\n\n'
+    +(live?`Shift ${state.shift} (${state.cashier}) sedang berjalan. Transaksi, bill, dan keranjang yang dibuat SETELAH waktu backup akan hilang, dan shift ini akan diganti dengan kondisi shift di file backup.\n\n`:'')
+    +'Disarankan lakukan Backup dulu sebelum restore. Lanjutkan memilih file?';
+  if(!confirm(warn))return;
+  let restoreText=null;
+  if(window.PosNativeFiles?.isNative?.()){
+    try { restoreText=await window.PosNativeFiles.pickText(['application/json','text/json']); }
+    catch(e){ toast('Restore gagal: '+(e.message||e),'error'); return; }
+    if(restoreText==null)return;
+  } else {
+    const i=document.createElement('input');i.type='file';i.accept='.json,application/json';
+    i.onchange=()=>{ const f=i.files&&i.files[0]; if(!f)return; const r=new FileReader();
+      r.onerror=()=>toast('Restore gagal: file tidak dapat dibaca.');
+      r.onload=()=>applyRestoreText(r.result).catch(e=>toast('Restore gagal: '+(e.message||e),'error'));
+      r.readAsText(f);
+    };
+    i.click(); return;
+  }
+  applyRestoreText(restoreText);
+}
+async function applyRestoreText(restoreText){
+      try{
+        const x=JSON.parse(restoreText);
+        if(!x||typeof x!=='object'||!x.settings||!Array.isArray(x.products))
+          throw new Error('Struktur file backup tidak valid.');
+
+        x.shiftSessions=Array.isArray(x.shiftSessions)?x.shiftSessions:[];
+        x.sales=Array.isArray(x.sales)?x.sales:[];
+        x.voids=Array.isArray(x.voids)?x.voids:[];
+        x.pending=Array.isArray(x.pending)?x.pending:[];
+        x.runtime=x.runtime&&typeof x.runtime==='object'?x.runtime:{};
+
+        // Shift hanya dilanjutkan bila backup menunjuk ke sesi yang memang masih terbuka.
+        const runtime=x.runtime;
+        const activeSession=runtime.sessionId
+          ? x.shiftSessions.find(s=>s && s.id===runtime.sessionId && !s.closed)
+          : null;
+
+        if(activeSession){
+          // Pertahankan kasir, shift, session ID, dan keranjang dari waktu backup.
+          x.runtime={
+            cashier:runtime.cashier||activeSession.cashier||'',
+            shift:String(runtime.shift||activeSession.shift||''),
+            sessionId:activeSession.id,
+            cart:Array.isArray(runtime.cart)?runtime.cart:[],
+            category:runtime.category||'Semua',
+            discountType:runtime.discountType||'Rp',
+            discount:Number(runtime.discount)||0,
+            orderType:ORDER_TYPES.includes(runtime.orderType)?runtime.orderType:'Dine In',
+            // Bill yang sedang dibuka hanya dipulihkan jika di backup masih berstatus open.
+            billId:(runtime.billId&&x.sales.some(s=>s&&s.id===runtime.billId&&isOpenBill(s)))?runtime.billId:null,
+            customer:runtime.customer||''
+          };
+        }else{
+          // Backup tanpa shift aktif: data transaksi/menu tetap pulih, tetapi login dimulai bersih.
+          x.runtime={cashier:'',shift:'',sessionId:null,cart:[],category:'Semua',discountType:'Rp',discount:0,orderType:'Dine In',billId:null,customer:''};
+        }
+
+        const previous=db;
+        db=x;
+        try{save(); if(window.PosNativeStorage?.isNative?.()){await nativeSnapshotQueue; await window.PosNativeStorage.saveSnapshot(JSON.stringify(db));}}catch(err){db=previous;throw err;}
+
+        // Atur tampilan berdasarkan status shift yang tersimpan di file backup.
+        state.cashier='';state.shift='';state.sessionId=null;state.cart=[];
+        state.category='Semua';state.discountType='Rp';state.discount=0;
+        state.orderType='Dine In';state.billId=null;state.customer='';
+        state.reportGuest=false;state.screen='kasir';
+        settingsFromLogin=false;
+
+        if(activeSession){
+          state.cashier=db.runtime.cashier;
+          state.shift=db.runtime.shift;
+          state.sessionId=db.runtime.sessionId;
+          state.cart=db.runtime.cart;
+          state.category=db.runtime.category;
+          state.discountType=db.runtime.discountType;
+          state.discount=db.runtime.discount;
+          state.orderType=db.runtime.orderType;
+          state.billId=db.runtime.billId;
+          state.customer=db.runtime.customer;
+          render();
+          document.getElementById('login').classList.add('hidden');
+          toast('Restore berhasil. Shift '+state.shift+' atas nama '+state.cashier+' siap dilanjutkan.');
+        }else{
+          document.getElementById('app').classList.add('hidden');
+          document.getElementById('login').classList.remove('hidden');
+          toast('Restore berhasil. Tidak ada shift aktif; silakan login untuk memulai shift baru.');
+        }
+      }catch(e){toast('Restore gagal: '+(e.message||'File backup tidak valid.'));}
+}
+async function wipe(){if(confirm('Hapus SEMUA data termasuk transaksi dan menu?')){localStorage.removeItem(KEY);db=structuredClone(defaults);state.cart=[];if(window.PosNativeStorage?.isNative?.()){try{await nativeSnapshotQueue.catch(()=>{});await window.PosNativeStorage.clearSnapshot();await window.PosNativeStorage.saveSnapshot(JSON.stringify(db));}catch(e){toast('Gagal menghapus data SQLite: '+(e.message||e),'error');return;}}toast('Semua data dihapus.');render()}}
+function modal(html){
+ const m=document.getElementById('modal');
+ const isPayment=html.includes('Metode Pembayaran');
+ const isMenuEditor=html.includes('Daftar Menu') && html.includes('menuEditor');
+ m.classList.toggle('payment-modal',isPayment);
+ m.classList.toggle('menu-editor-modal',isMenuEditor);
+ m.innerHTML=`<div class="modalbox${isPayment?' payment-modalbox':isMenuEditor?' menu-editor-modalbox':''}">${html}</div>`;
+ m.classList.remove('hidden');
+}
+function closeModal(){document.getElementById('modal').classList.add('hidden')}
+function generateOwnerDailyReportText(f, t, sh, sales) {
+  const totalItem = sales.reduce((sum, s) => sum + (s.items || []).reduce((a, x) => a + Number(x.qty || 0), 0), 0);
+  const totalPenjualan = sales.reduce((sum, s) => sum + Number(s.total || 0), 0);
+
+  const payments = {};
+  sales.forEach(s => {
+    const method = (s.method || 'Lainnya').trim() || 'Lainnya';
+    payments[method] = (payments[method] || 0) + Number(s.total || 0);
+  });
+
+  const shifts = {};
+  sales.forEach(s => {
+    const key = revShift(s) || '-';
+    if (!shifts[key]) shifts[key] = { count: 0, total: 0 };
+    shifts[key].count++;
+    shifts[key].total += Number(s.total || 0);
+  });
+
+  const orderTypes = {};
+  sales.forEach(s => {
+    if (!s.orderType) return;
+    if (!orderTypes[s.orderType]) orderTypes[s.orderType] = { count: 0, total: 0 };
+    orderTypes[s.orderType].count++;
+    orderTypes[s.orderType].total += Number(s.total || 0);
+  });
+  const ob = openBills();
+  const obTotal = ob.reduce((a, s) => a + Number(s.total || 0), 0);
+
+  const dateLabel = f === t
+    ? `${String(Number(f.slice(8, 10)))} / ${String(Number(f.slice(5, 7)))} / ${f.slice(0, 4)}`
+    : `${String(Number(f.slice(8, 10)))} / ${String(Number(f.slice(5, 7)))} / ${f.slice(0, 4)}\n${String(Number(t.slice(8, 10)))} / ${String(Number(t.slice(5, 7)))} / ${t.slice(0, 4)}`;
+
+  // Mengambil tanggal & jam cetak saat ini (tanpa detik)
+  const now = new Date();
+  const printDate = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+  const W = 32;
+  const line = '-'.repeat(W);
+  const padRow = (label, value) => {
+    label = String(label); value = String(value);
+    const spaces = Math.max(1, W - label.length - value.length);
+    return label + ' '.repeat(spaces) + value + '\n';
+  };
+  const center = (text) => {
+    text = String(text);
+    const left = Math.max(0, Math.floor((W - text.length) / 2));
+    return ' '.repeat(left) + text + '\n';
+  };
+
+  let text = '';
+  // Nama toko dibuat tebal, rata tengah, dan double-height pada printer ESC/POS 58 mm.
+  const reportStoreName = (db.settings.name || 'WARKOP').toUpperCase();
+  text += '\x1b\x61\x01' + '\x1b\x45\x01' + '\x1d\x21\x10' +
+    reportStoreName + '\x1d\x21\x00' + '\x1b\x45\x00\n' + '\x1b\x61\x00';
+  text += center('LAPORAN PENJUALAN HARIAN');
+  text += '\n';
+  text += `Tanggal : ${dateLabel}\n`;
+  if (sh) text += `Shift   : ${sh}\n`;
+  text += line + '\n';
+  text += padRow('Transaksi', sales.length);
+  text += padRow('Total Item', totalItem);
+  text += padRow('Penjualan', rupiah(totalPenjualan));
+  text += line + '\n';
+  text += 'PEMBAYARAN\n';
+
+  const paymentKeys = Object.keys(payments);
+  if (paymentKeys.length) {
+    paymentKeys.forEach(method => {
+      text += padRow(method, rupiah(payments[method]));
+    });
+  } else {
+    text += padRow('-', rupiah(0));
+  }
+
+  text += line + '\n';
+  text += 'REKAP PER SHIFT\n';
+
+  const shiftOrder = ['1', '2', '3'];
+  const existing = Object.keys(shifts).filter(x => !shiftOrder.includes(x));
+  const shiftKeys = [...shiftOrder.filter(x => shifts[x]), ...existing];
+  if (shiftKeys.length) {
+    shiftKeys.forEach(k => {
+      text += padRow(`Shift ${k} (${shifts[k].count} trx)`, rupiah(shifts[k].total));
+    });
+  } else {
+    text += padRow('Shift - (0 trx)', rupiah(0));
+  }
+
+  if (Object.keys(orderTypes).length) {
+    text += line + '\n';
+    text += 'TIPE ORDER\n';
+    Object.entries(orderTypes).forEach(([k, v]) => {
+      text += padRow(`${k} (${v.count} trx)`, rupiah(v.total));
+    });
+  }
+
+  text += line + '\n';
+  text += padRow('TOTAL PENJUALAN', rupiah(totalPenjualan));
+  text += line + '\n';
+  if (ob.length) {
+    text += 'BILL BELUM LUNAS\n';
+    text += padRow(`${ob.length} bill`, rupiah(obTotal));
+    text += '(belum dihitung penjualan)\n';
+    text += line + '\n';
+  }
+
+  // Perintah ESC/POS untuk Font Kecil (Font B)
+  const FONT_SMALL_ON = '\x1b\x4d\x01';
+  const FONT_NORMAL = '\x1b\x4d\x00';
+  text += center(`${FONT_SMALL_ON}Dicetak: ${printDate}${FONT_NORMAL}`);
+
+  text += '\n\n';
+  return text;
+}
+
+function ownerDailyReportHTML(f,t,sh,sales){
+  const totalItem=sales.reduce((sum,s)=>sum+(s.items||[]).reduce((a,x)=>a+Number(x.qty||0),0),0);
+  const totalPenjualan=sales.reduce((sum,s)=>sum+Number(s.total||0),0);
+
+  const payments={};
+  sales.forEach(s=>{
+    const method=(s.method||'Lainnya').trim()||'Lainnya';
+    payments[method]=(payments[method]||0)+Number(s.total||0);
+  });
+
+  const shifts={};
+  sales.forEach(s=>{
+    const key=revShift(s)||'-';
+    if(!shifts[key])shifts[key]={count:0,total:0};
+    shifts[key].count++;
+    shifts[key].total+=Number(s.total||0);
+  });
+
+  const orderTypes={};
+  sales.forEach(s=>{
+    if(!s.orderType)return;
+    if(!orderTypes[s.orderType])orderTypes[s.orderType]={count:0,total:0};
+    orderTypes[s.orderType].count++;
+    orderTypes[s.orderType].total+=Number(s.total||0);
+  });
+  const ob=openBills(),obTotal=ob.reduce((a,s)=>a+Number(s.total||0),0);
+
+  const dateLabel=f===t
+    ? `${String(Number(f.slice(8,10)))} / ${String(Number(f.slice(5,7)))} / ${f.slice(0,4)}`
+    : `${String(Number(f.slice(8,10)))} / ${String(Number(f.slice(5,7)))} / ${f.slice(0,4)} - ${String(Number(t.slice(8,10)))} / ${String(Number(t.slice(5,7)))} / ${t.slice(0,4)}`;
+
+  const row=(label,value,total=false)=>`
+    <div class="owner-preview-row${total?' owner-preview-total':''}">
+      <span>${esc(label)}</span><b>${esc(value)}</b>
+    </div>`;
+
+  const paymentRows=Object.keys(payments).length
+    ? Object.entries(payments).map(([method,total])=>row(method,rupiah(total))).join('')
+    : row('-',rupiah(0));
+
+  const shiftOrder=['1','2','3'];
+  const existing=Object.keys(shifts).filter(x=>!shiftOrder.includes(x));
+  const shiftKeys=[...shiftOrder.filter(x=>shifts[x]),...existing];
+  const shiftRows=shiftKeys.length
+    ? shiftKeys.map(k=>row(`Shift ${k} (${shifts[k].count} trx)`,rupiah(shifts[k].total))).join('')
+    : row('Shift - (0 trx)',rupiah(0));
+
+  return `<div class="owner-report-paper">
+    <div class="owner-preview-header">
+      ${db.settings.logo?`<img class="owner-preview-logo" src="${db.settings.logo}" alt="Logo">`:''}
+      <div class="owner-preview-store">${esc((db.settings.name||'WARKOP').toUpperCase())}</div>
+      <div class="owner-preview-heading">LAPORAN PENJUALAN HARIAN</div>
+    </div>
+    <div class="owner-preview-divider"></div>
+    <div class="owner-preview-meta">Tanggal : ${esc(dateLabel)}${sh?`<br>Shift   : ${esc(sh)}`:''}</div>
+    <div class="owner-preview-divider"></div>
+    ${row('Transaksi',String(sales.length))}
+    ${row('Total Item',String(totalItem))}
+    ${row('Penjualan',rupiah(totalPenjualan))}
+    <div class="owner-preview-divider"></div>
+    <div class="owner-preview-section">PEMBAYARAN</div>
+    ${paymentRows}
+    <div class="owner-preview-divider"></div>
+    <div class="owner-preview-section">REKAP PER SHIFT</div>
+    ${shiftRows}
+    ${Object.keys(orderTypes).length?`<div class="owner-preview-divider"></div><div class="owner-preview-section">TIPE ORDER</div>${Object.entries(orderTypes).map(([k,v])=>row(`${k} (${v.count} trx)`,rupiah(v.total))).join('')}`:''}
+    <div class="owner-preview-divider"></div>
+    ${row('TOTAL PENJUALAN',rupiah(totalPenjualan),true)}
+    ${ob.length?`<div class="owner-preview-divider"></div><div class="owner-preview-section">BILL BELUM LUNAS</div>${row(`${ob.length} bill`,rupiah(obTotal))}<div class="mini" style="text-align:center">(belum dihitung penjualan)</div>`:''}
+    <div class="owner-preview-footer">Dicetak: ${esc(new Date().toLocaleString('id-ID'))}</div>
+  </div>`;
+}
+
+function openOwnerDailyReportPreview(f, t, sh, sales){
+  const old = document.getElementById('receiptPreviewBackdrop');
+  if(old) old.remove();
+
+  const wrap = document.createElement('div');
+  wrap.id = 'receiptPreviewBackdrop';
+  wrap.className = 'modal receipt-preview-modal';
+
+  const box = document.createElement('div');
+  box.className = 'receipt-preview';
+
+  const head = document.createElement('div');
+  head.className = 'modalhead receipt-no-print';
+  head.innerHTML = `
+    <div>
+      <b>Preview Laporan</b>
+    </div>
+    <button class="close" onclick="closeReceiptPreview()">×</button>`;
+
+  const area = document.createElement('div');
+  area.className = 'receipt-print-area';
+
+  const paper = document.createElement('div');
+  paper.className = 'receipt-print-paper';
+  paper.dataset.ownerReport = '1';
+  paper.dataset.ownerFrom = f;
+  paper.dataset.ownerTo = t;
+  paper.dataset.ownerShift = sh || '';
+  
+  const plainText = generateOwnerDailyReportText(f, t, sh, sales);
+  paper.dataset.plainText = plainText;
+
+  paper.innerHTML = ownerDailyReportHTML(f, t, sh, sales);
+  area.appendChild(paper);
+
+  const actions = document.createElement('div');
+  actions.className = 'receipt-actions receipt-no-print';
+  actions.innerHTML = `
+    <button class="btn light" onclick="closeReceiptPreview()">Tutup</button>
+    <button class="btn primary" onclick="printOwnerReportPreview()">Print</button>`;
+
+  box.appendChild(head);
+  box.appendChild(area);
+  box.appendChild(actions);
+  wrap.appendChild(box);
+  document.body.appendChild(wrap);
+}
+
+
+async function printOwnerReportPreview() {
+  const preview = document.querySelector(
+    '#receiptPreviewBackdrop .receipt-print-paper[data-owner-report="1"]'
+  );
+
+  if (!preview) {
+    toast('Preview laporan tidak ditemukan.');
+    return;
+  }
+
+  const sForPreview = db.sales.find(x => x.id === preview.dataset.saleId);
+  const plainText = sForPreview ? generateReceiptText(sForPreview, preview.dataset.void === '1', preview.dataset.reprint === '1') : (preview.dataset.plainText || '');
+
+  if (!plainText.trim()) {
+    toast('Isi laporan kosong.');
+    return;
+  }
+
+  // 1. Bluetooth Direct: khusus laporan.
+  if (syncBTConnection()) {
+    try {
+      toast('Mengirim laporan ke printer...');
+
+      const success = await writeBluetoothReportOnly(plainText);
+
+      if (!success) {
+        throw new Error('Pengiriman laporan gagal.');
+      }
+
+      await writeBluetoothReportOnly('\n\n\n\n');
+
+      toast('Laporan berhasil dicetak.');
+      closeReceiptPreview();
+      return;
+
+    } catch (e) {
+      console.error('Gagal mencetak laporan:', e);
+      toast('Cetak langsung gagal. Coba tombol Print lagi atau periksa koneksi.');
+      return;
+    }
+  }
+
+  // 2. Android: gunakan RawBT jika Bluetooth Direct tidak aktif.
+  if (/Android/i.test(navigator.userAgent)) {
+    try {
+      printViaRawBTText(plainText);
+      toast('Perintah cetak laporan dikirim ke RawBT.');
+      closeReceiptPreview();
+    } catch (e) {
+      console.error('Gagal membuka RawBT:', e);
+      toast('RawBT gagal dibuka. Periksa instalasi RawBT.');
+    }
+    return;
+  }
+
+  // 3. Browser komputer.
+  window.print();
+}
+
+
+
+async function printOwnerDailyReport() {
+  const f = document.getElementById('rFrom')?.value || dateKey();
+  const t = document.getElementById('rTo')?.value || f;
+  const sh = document.getElementById('rShift')?.value || '';
+
+  if (!f || !t) {
+    return toast('Tanggal laporan belum dipilih.');
+  }
+
+  if (f > t) {
+    return toast('Tanggal mulai tidak boleh lebih besar dari tanggal akhir.');
+  }
+
+  // Filter transaksi berdasarkan tanggal, shift, dan status void.
+  // Hanya transaksi LUNAS; pendapatan dihitung berdasarkan tanggal/shift saat dibayar.
+  const sales = paidSalesInRange(f, t, sh).filter(s => !s.voided);
+
+  if (sales.length === 0) {
+    return toast('Tidak ada transaksi untuk tanggal/shift ini.');
+  }
+
+  // Buat teks laporan tanpa menghapus karakter dari hasil aslinya.
+  const plainText = String(
+    generateOwnerDailyReportText(f, t, sh, sales)
+  );
+
+  // Jika Bluetooth Direct terhubung, gunakan fungsi khusus laporan.
+  if (syncBTConnection()) {
+    try {
+      toast('Sedang mengirim laporan ke printer...');
+
+      const success = await writeBluetoothReportOnly(plainText);
+
+      if (!success) {
+        throw new Error('Pengiriman laporan gagal.');
+      }
+
+      // Majukan kertas setelah seluruh teks laporan dikirim.
+      const paperFeedSuccess =
+        await writeBluetoothReportOnly('\n\n\n\n');
+
+      if (!paperFeedSuccess) {
+        throw new Error('Perintah maju kertas gagal dikirim.');
+      }
+
+      toast('Laporan berhasil dikirim ke printer Bluetooth.');
+      return;
+
+    } catch (e) {
+      // Pertahankan koneksi agar tidak langsung memutus Bluetooth
+      // hanya karena satu operasi cetak gagal.
+      console.error('Gagal mengirim laporan Bluetooth:', e);
+
+      toast(
+        'Laporan gagal dikirim. Periksa printer dan koneksi Bluetooth.'
+      );
+
+      return;
+    }
+  }
+
+  // Preview hanya dibuka jika Bluetooth Direct belum terhubung.
+  openOwnerDailyReportPreview(f, t, sh, sales);
+}
+
+
+
+async function exportExcel(){
+ const f=document.getElementById('rFrom').value,t=document.getElementById('rTo').value,sh=document.getElementById('rShift').value;
+
+ if(sh){
+   const active=getActiveSession(sh, sh==='3' ? ((new Date(t+'T12:00:00')).getTime() ? dateKey(new Date(t+'T12:00:00')) : t) : t);
+   const activeSessions=(db.shiftSessions||[]).filter(s=>s.shift===String(sh)&&s.businessDate>=f&&s.businessDate<=t&&!s.closed);
+   if(activeSessions.length){
+     return alert(`Laporan Excel Shift ${sh} belum bisa ditarik karena shift masih aktif. Lakukan Closing Shift terlebih dahulu.`);
+   }
+ }else{
+   const activeSessions=(db.shiftSessions||[]).filter(s=>s.businessDate>=f&&s.businessDate<=t&&!s.closed);
+   if(activeSessions.length){
+     return alert('Laporan Excel belum bisa ditarik karena masih ada shift aktif pada rentang tanggal tersebut. Lakukan Closing Shift terlebih dahulu.');
+   }
+ }
+
+ // Hanya transaksi lunas, berdasarkan tanggal/shift pembayaran. Bill belum lunas ada di sheet terpisah.
+ const allSales=paidSalesInRange(f,t,sh);
+ const sales=allSales.filter(s=>!s.voided);
+ const voids=db.voids.filter(v=>v.businessDate>=f&&v.businessDate<=t&&(!sh||v.shift===sh));
+
+ const rekap=[['No Struk','Tanggal/Waktu Bayar','Kasir (Bayar)','Shift (Bayar)','Tipe Order','Meja/Nama','Total Subtotal','Diskon Struk','PPN','Total Akhir','Metode','Waktu Dibuat']];
+ sales.forEach(s=>{
+   const sub=s.items.reduce((a,x)=>a+x.price*x.qty,0);
+   const disc=s.discountType==='%'?sub*s.discount/100:s.discount;
+   const after=sub-disc;
+   const ppn=s.tax?after*s.tax/100:0;
+   rekap.push([s.id,new Date(s.paidAt||s.date).toLocaleString('id-ID'),s.paidCashier||s.cashier,'Shift '+revShift(s),s.orderType||'-',s.customer,sub,disc,ppn,s.total,s.method,new Date(s.date).toLocaleString('id-ID')]);
+ });
+ const totalAkhir=sales.reduce((a,s)=>a+s.total,0);
+ rekap.push(['','','','','','','','','TOTAL PENJUALAN',totalAkhir,'','']);
+
+ const detail=[['No Struk','Tanggal Transaksi','Tipe Order','Nama Barang','Harga Satuan','Qty','Total Harga']];
+ sales.forEach(s=>s.items.forEach(x=>detail.push([s.id,new Date(s.paidAt||s.date).toLocaleDateString('id-ID'),s.orderType||'-',x.name,x.price,x.qty,x.price*x.qty])));
+
+ const bills=[['No Bill','Dibuat','Kasir','Shift','Tipe Order','Meja/Nama','Detail Barang','Total Belum Lunas']];
+ openBills().forEach(s=>bills.push([s.id,new Date(s.date).toLocaleString('id-ID'),s.cashier,'Shift '+s.shift,s.orderType||'-',s.customer,s.items.map(x=>`${x.name} x${x.qty}`).join(', '),s.total]));
+ bills.push(['','','','','','','TOTAL BELUM LUNAS (posisi saat export)',openBills().reduce((a,s)=>a+s.total,0)]);
+
+ const audit=[['LAPORAN AUDIT TRANSAKSI VOID (BATAL)'],[new Date(f+'T00:00:00').toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})+(f!==t?' - '+new Date(t+'T00:00:00').toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}):'')],[db.settings.name||'WARKOP'],[],['Waktu / Tanggal','No Struk','Kasir / Shift','Detail Barang','Nominal Batal','Alasan Void']];
+ voids.forEach(v=>{
+   const s=db.sales.find(x=>x.id===v.saleId);
+   const detailBarang=s?s.items.map(x=>`${x.name} x${x.qty}`).join(', '):'-';
+   audit.push([new Date(v.date).toLocaleString('id-ID'),v.saleId,`${v.cashier} (Shift ${v.shift})`,detailBarang,v.total,v.reason]);
+ });
+ audit.push(['TOTAL NOMINAL BATAL / VOID','','','',voids.reduce((a,v)=>a+Number(v.total||0),0),'']);
+
+ const blob=xlsxBlob([{name:'Rekap Struk',rows:rekap},{name:'Detail Barang Terjual',rows:detail},{name:'Audit Log Void',rows:audit},{name:'Bill Belum Lunas',rows:bills}]);
+ const filename=`Laporan_Penjualan_${f}_sd_${t}${sh?'_Shift_'+sh:''}.xlsx`;
+ if(window.PosNativeFiles?.isNative?.()){
+   try{await window.PosNativeFiles.saveBase64(filename,await blobToBase64(blob),'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');toast('Laporan Excel berhasil disimpan ke folder Download.');}
+   catch(e){toast('Laporan Excel gagal disimpan: '+(e.message||e),'error');}
+ }else{
+   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+   toast('Laporan Excel 4 sheet berhasil dibuat. Void tidak masuk Rekap/Detail; bill belum lunas ada di sheet tersendiri.');
+ }
+}
+
+function xmlEsc(v){
+ return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+}
+function colName(n){
+ let s=''; n++;
+ while(n){let r=(n-1)%26;s=String.fromCharCode(65+r)+s;n=Math.floor((n-1)/26)}
+ return s;
+}
+function xlsxSheet(rows){
+ let maxCols=Math.max(1,...rows.map(r=>r.length));
+ let widths=[];
+ for(let c=0;c<maxCols;c++) widths[c]=Math.min(45,Math.max(10,...rows.map(r=>String(r[c]??'').length+2)));
+ let cols=widths.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('');
+ let body=rows.map((row,ri)=>{
+   const cells=row.map((v,ci)=>{
+     if(v===null||v===undefined||v==='') return '';
+     const ref=colName(ci)+(ri+1);
+     if(typeof v==='number' && Number.isFinite(v)) return `<c r="${ref}"><v>${v}</v></c>`;
+     return `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${xmlEsc(v)}</t></is></c>`;
+   }).join('');
+   return `<row r="${ri+1}">${cells}</row>`;
+ }).join('');
+ return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"/></sheetViews><cols>${cols}</cols><sheetData>${body}</sheetData></worksheet>`;
+}
+function crc32(buf){
+ let table=crc32.table;
+ if(!table){table=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);table[n]=c>>>0}crc32.table=table}
+ let c=0xFFFFFFFF;for(let i=0;i<buf.length;i++)c=table[(c^buf[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0;
+}
+function u16(n){return new Uint8Array([n&255,(n>>>8)&255])}
+function u32(n){return new Uint8Array([n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255])}
+function concatBytes(parts){
+ let len=parts.reduce((a,p)=>a+p.length,0),out=new Uint8Array(len),o=0;
+ parts.forEach(p=>{out.set(p,o);o+=p.length});return out;
+}
+function zipStore(files){
+ const enc=new TextEncoder(), locals=[], centrals=[];let offset=0;
+ files.forEach(file=>{
+   const name=enc.encode(file.name),data=enc.encode(file.data),crc=crc32(data);
+   const lh=concatBytes([new Uint8Array([80,75,3,4]),u16(20),u16(0),u16(0),u16(0),u16(0),u32(crc),u32(data.length),u32(data.length),u16(name.length),u16(0),name,data]);
+   locals.push(lh);
+   const ch=concatBytes([new Uint8Array([80,75,1,2]),u16(20),u16(20),u16(0),u16(0),u16(0),u16(0),u32(crc),u32(data.length),u32(data.length),u16(name.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(offset),name]);
+   centrals.push(ch);offset+=lh.length;
+ });
+ const central=concatBytes(centrals),local=concatBytes(locals);
+ const end=concatBytes([new Uint8Array([80,75,5,6]),u16(0),u16(0),u16(files.length),u16(files.length),u32(central.length),u32(local.length),u16(0)]);
+ return new Blob([local,central,end],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+function xlsxBlob(sheets){
+ const enc=new TextEncoder();
+ const workbook=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets.map((s,i)=>`<sheet name="${xmlEsc(s.name)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')}</sheets></workbook>`;
+ const rels=sheets.map((s,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('');
+ const content=[
+   `<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>`,
+   ...sheets.map((s,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`)
+ ].join('');
+ const files=[
+  {name:'[Content_Types].xml',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${sheets.map((s,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`},
+  {name:'_rels/.rels',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`},
+  {name:'xl/workbook.xml',data:workbook},
+  {name:'xl/_rels/workbook.xml.rels',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${rels}</Relationships>`},
+  ...sheets.map((s,i)=>({name:`xl/worksheets/sheet${i+1}.xml`,data:xlsxSheet(s.rows)}))
+ ];
+ return zipStore(files);
+}
+function sheet(title,rows){return `<h2>${title}</h2><table border="1">${rows.map((r,i)=>`<tr>${r.map(c=>`<${i?'td':'th'}>${esc(c)}</${i?'td':'th'}>`).join('')}</tr>`).join('')}</table>`}
+function start(){
+ if(state.cashier && state.sessionId){
+   document.getElementById('login').classList.add('hidden');
+   state.screen='kasir';
+   state.reportGuest=false;
+   render();
+   backupReminder();
+ }else{
+   document.getElementById('app').classList.add('hidden');
+   document.getElementById('login').classList.remove('hidden');
+ }
+}
+// Native document picker untuk import XLSX dari SAF Android.
+if(window.PosNativeFiles?.isNative?.()){
+ document.addEventListener('click', async event=>{
+   const target=event.target?.closest?.('input[type="file"]');
+   if(!target || !target.accept?.includes('.xlsx')) return;
+   event.preventDefault(); event.stopPropagation();
+   try{
+     const picked=await window.PosNativeFiles.pickBase64(['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/vnd.ms-excel','application/octet-stream']);
+     if(!picked)return;
+     const raw=atob(picked.data); const bytes=new Uint8Array(raw.length); for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
+     const file=new File([bytes],picked.name||'menu.xlsx',{type:picked.mimeType||'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+     await uploadMenuExcel(file);
+   }catch(error){toast('Upload Excel gagal: '+(error.message||error),'error');}
+ },true);
+}
+if(!window.PosNativeStorage?.isNative?.()) start();
+// Auto-connect hanya aktif setelah printer pernah berhasil dipasangkan manual.
+ // Tidak membuka dialog pairing; hanya mencari perangkat yang izinnya sudah tersimpan.
+ // Tombol Connect BT tetap aktif untuk pairing/pemilihan manual kapan saja.
+setTimeout(()=>{
+  if(isAutoBTEnabled() && btState==='disconnected') autoReconnectBluetooth();
+},300);
+</script>
+
+<script>
+if ('serviceWorker' in navigator && !window.Capacitor?.isNativePlatform?.()) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js', {
+      scope: './',
+      updateViaCache: 'none'
+    }).then(registration => {
+      // Periksa update saat aplikasi dibuka; tidak memaksa reload saat transaksi berjalan.
+      registration.update().catch(err => console.warn('Cek update POS gagal:', err));
+      return registration;
+    })
+      .then(() => console.log('PWA service worker aktif'))
+      .catch(err => console.warn('Service worker gagal:', err));
+  });
+}
+</script>
+
+
+<style id="payment-modal-visibility-fix">
+/* Payment modal: QRIS content scrolls inside the dialog and the save action stays reachable. */
+#modal.payment-modal{
+  z-index:1200!important;
+  align-items:flex-start!important;
+  justify-content:center!important;
+  overflow-y:auto!important;
+  -webkit-overflow-scrolling:touch;
+  padding:12px 12px max(16px,env(safe-area-inset-bottom))!important;
+}
+#modal.payment-modal .payment-modalbox{
+  width:min(680px,100%)!important;
+  max-height:calc(100dvh - 28px)!important;
+  max-height:calc(100vh - 28px)!important;
+  margin:auto 0!important;
+  display:flex!important;
+  flex-direction:column!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+  padding:14px!important;
+}
+#modal.payment-modal .payment-modalbox .modalhead{
+  position:sticky;
+  top:-14px;
+  z-index:4;
+  flex:none;
+  background:#fff;
+  padding:2px 0 8px;
+}
+#modal.payment-modal .payment-modalbox #qrisPreview{
+  flex:none;
+  margin:8px 0!important;
+  padding:0 0 4px;
+}
+#modal.payment-modal .payment-modalbox #qrisPreview img{
+  display:block;
+  width:auto!important;
+  max-width:min(260px,72vw)!important;
+  max-height:min(34dvh,260px)!important;
+  max-height:min(34vh,260px)!important;
+  object-fit:contain;
+  margin:0 auto;
+}
+#modal.payment-modal .payment-modalbox > .btn.primary{
+  position:sticky!important;
+  bottom:-14px;
+  z-index:5;
+  flex:none!important;
+  margin-top:8px!important;
+  padding:12px!important;
+  box-shadow:0 -5px 12px #ffffffee;
+}
+@media(max-width:600px){
+  #modal.payment-modal{padding:8px 8px max(12px,env(safe-area-inset-bottom))!important}
+  #modal.payment-modal .payment-modalbox{
+    max-height:calc(100dvh - 16px)!important;
+    max-height:calc(100vh - 16px)!important;
+    padding:12px!important;
+  }
+  #modal.payment-modal .payment-modalbox #qrisPreview img{
+    max-height:30vh!important;
+  }
+}
+</style>
+
+
+<style id="menu-editor-bottom-actions-fix">
+/* Daftar menu: place the dialog above the fixed navigation and allow the final row to scroll fully into view. */
+#modal.menu-editor-modal{
+  z-index:1300!important;
+  align-items:center!important;
+  justify-content:center!important;
+  overflow-y:auto!important;
+  -webkit-overflow-scrolling:touch;
+  padding:12px 12px 18px!important;
+}
+#modal.menu-editor-modal .menu-editor-modalbox{
+  width:min(760px,100%)!important;
+  max-height:calc(100dvh - 30px)!important;
+  max-height:calc(100vh - 30px)!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+  padding:16px 18px 24px!important;
+  margin:auto 0!important;
+}
+#modal.menu-editor-modal .modalhead{
+  position:sticky;
+  top:-16px;
+  z-index:6;
+  background:#fff;
+  padding:4px 0 10px;
+}
+#modal.menu-editor-modal #menuEditor{
+  padding-bottom:16px;
+}
+#modal.menu-editor-modal #menuEditor .scroll{
+  max-height:none!important;
+  overflow:visible!important;
+  padding-bottom:18px;
+}
+#modal.menu-editor-modal #menuEditor table{
+  width:100%;
+  border-collapse:collapse;
+}
+#modal.menu-editor-modal #menuEditor th,
+#modal.menu-editor-modal #menuEditor td{
+  vertical-align:middle;
+}
+#modal.menu-editor-modal #menuEditor td:last-child{
+  white-space:nowrap;
+  min-width:126px;
+}
+#modal.menu-editor-modal #menuEditor td:last-child .btn{
+  display:inline-block;
+  margin:2px 1px;
+}
+@media(max-width:600px){
+  #modal.menu-editor-modal{padding:8px 8px 14px!important}
+  #modal.menu-editor-modal .menu-editor-modalbox{
+    max-height:calc(100dvh - 18px)!important;
+    max-height:calc(100vh - 18px)!important;
+    padding:12px 12px 22px!important;
+  }
+  #modal.menu-editor-modal #menuEditor td:last-child{
+    min-width:116px;
+  }
+}
+</style>
+
+
+<style id="settings-save-next-to-qris">
+/* Keep Save Settings pinned above the fixed bottom navigation at all scroll positions. */
+.settings-save-inline{
+  position:fixed!important;
+  right:max(18px, calc((100vw - min(1180px, 96vw))/2 + 18px))!important;
+  bottom:82px!important;
+  z-index:45!important;
+  display:flex!important;
+  justify-content:flex-end;
+  align-items:center;
+  margin:0!important;
+  padding:8px!important;
+  background:#fff!important;
+  border:1px solid var(--line);
+  border-radius:12px;
+  box-shadow:0 4px 16px #0b2a4a20;
+}
+.settings-save-inline .btn{
+  min-width:142px;
+  white-space:nowrap;
+  padding:11px 16px;
+}
+@media(max-width:800px){
+  .settings-save-inline{
+    right:12px!important;
+    bottom:70px!important;
+  }
+}
+@media(max-height:520px){
+  .settings-save-inline{bottom:62px!important}
+}
+</style>
+\n</body></html>

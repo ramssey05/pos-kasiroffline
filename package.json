@@ -1,24 +1,24 @@
 {
-  "name": "pos-kasiroffline",
-  "version": "1.0.0",
+  "name": "pos-kasir-offline-native",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vite build",
+    "build": "esbuild www/native-bridge.js --bundle --format=iife --target=es2020 --outfile=www/native-bridge.bundle.js && vite build && cp www/native-bridge.bundle.js dist/native-bridge.bundle.js && cp www/sw.js dist/sw.js && cp www/manifest.webmanifest dist/manifest.webmanifest && mkdir -p dist/icons && cp www/icons/* dist/icons/",
     "android:sync": "npm run build && cap sync android"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.3",
     "@capacitor/core": "^7.4.3",
+    "@capacitor/filesystem": "^7.1.4",
+    "@capacitor/share": "^7.0.1",
     "@capacitor-community/bluetooth-le": "^7.2.0",
     "@nosslabs/bluetooth-classic": "^1.2.0",
-    "xlsx": "^0.18.5",
-    "@capacitor/filesystem": "^7.1.4",
-    "@capacitor/app-launcher": "^7.0.1",
-    "@capacitor/share": "^7.0.1"
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.4.3",
-    "vite": "^6.4.1"
+    "vite": "^6.4.1",
+    "esbuild": "^0.24.2"
   }
 }
