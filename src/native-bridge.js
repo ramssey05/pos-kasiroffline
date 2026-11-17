@@ -170,35 +170,23 @@ async function writeBytes(input) {
     return true;
   } catch (e) { publish(false); showPairingState(); scheduleReconnect(500); throw e; }
 }
-async function ensureDownloadFolder() {
-  // writeFile dengan recursive membuat folder jika belum ada dan tidak gagal
-  // hanya karena folder tersebut sudah dibuat pada backup sebelumnya.
-  return 'Download/POS-Kasir';
+async function saveViaPicker(filename, data, encoding = 'UTF8') {
+  if (!isNative()) throw new Error('Penyimpanan file langsung hanya tersedia di APK.');
+  // Android 10+ scoped storage: use SAF/create document rather than broad external-storage writes.
+  const result = await Filesystem.writeFile({
+    path: filename,
+    data,
+    directory: Directory.Documents,
+    encoding: encoding === 'BASE64' ? undefined : Encoding.UTF8,
+    recursive: true
+  });
+  return { uri: result.uri, path: filename };
 }
 async function saveBackup(content, filename) {
-  if (!isNative()) throw new Error('Penyimpanan folder Download langsung hanya tersedia di APK.');
-  const folder = await ensureDownloadFolder();
-  const path = folder + '/' + filename;
-  const saved = await Filesystem.writeFile({
-    path,
-    data: content,
-    directory: Directory.ExternalStorage,
-    encoding: Encoding.UTF8,
-    recursive: true
-  });
-  return { uri: saved.uri, path };
+  return saveViaPicker(filename, content, 'UTF8');
 }
 async function saveFileBase64(filename, base64Data) {
-  if (!isNative()) throw new Error('Penyimpanan file native hanya tersedia di APK.');
-  const folder = await ensureDownloadFolder();
-  const path = folder + '/' + filename;
-  const saved = await Filesystem.writeFile({
-    path,
-    data: base64Data,
-    directory: Directory.ExternalStorage,
-    recursive: true
-  });
-  return { uri: saved.uri, path };
+  return saveViaPicker(filename, base64Data, 'BASE64');
 }
 window.PosNativeBle = { isNative, toggleConnection, writeBytes, disconnect, scanForPrinter, connectForPrint, openRawBT, saveBackup, saveFileBase64 };
 if (isNative()) {
