@@ -3,7 +3,7 @@ package com.poskasir.offline
 import android.database.sqlite.SQLiteDatabase
 import com.getcapacitor.*
 import com.getcapacitor.annotation.CapacitorPlugin
-import com.getcapacitor.annotation.PluginMethod
+import com.getcapacitor.PluginMethod
 import org.json.JSONArray
 import org.json.JSONObject
 
