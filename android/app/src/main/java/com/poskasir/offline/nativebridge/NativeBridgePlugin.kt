@@ -11,6 +11,7 @@ import android.os.Build
 import android.provider.OpenableColumns
 import android.provider.Settings
 import com.getcapacitor.annotation.ActivityCallback
+import androidx.activity.result.ActivityResult
 import android.content.BroadcastReceiver
 import android.content.IntentFilter
 import android.util.Base64
